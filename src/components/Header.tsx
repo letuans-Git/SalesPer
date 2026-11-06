@@ -9,13 +9,9 @@ import {
   Printer,
   Globe,
   RefreshCw,
-  Sun,
-  Moon,
 } from 'lucide-react';
 
 interface HeaderProps {
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   dashboardTitle?: string;
   companyName?: string;
   lastUpdated: string;
@@ -31,8 +27,6 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  theme,
-  onToggleTheme,
   dashboardTitle,
   companyName,
   lastUpdated,
@@ -193,26 +187,6 @@ export const Header: React.FC<HeaderProps> = ({
             title="Làm mới dữ liệu từ Google Sheets"
           >
             <RotateCcw className="w-4 h-4" />
-          </button>
-
-          {/* Theme Toggle (Light / Dark) */}
-          <button
-            onClick={onToggleTheme}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm"
-            title={theme === 'dark' ? 'Chuyển sang giao diện nền Sáng (Light Mode)' : 'Chuyển sang giao diện nền Tối (Dark Mode)'}
-            aria-label="Chuyển đổi giao diện Sáng / Tối"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Nền Sáng</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="hidden sm:inline">Nền Tối</span>
-              </>
-            )}
           </button>
         </div>
       </div>

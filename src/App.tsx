@@ -59,31 +59,6 @@ export default function App() {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [customInsights, setCustomInsights] = useState<SalesInsightsData | null>(null);
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try {
-      const saved = localStorage.getItem('cfc_dashboard_theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-    } catch {}
-    return 'dark';
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('cfc_dashboard_theme', theme);
-      if (theme === 'light') {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-      }
-    } catch {}
-  }, [theme]);
-
-  const handleToggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  }, []);
-
   // Modals state
   const [selectedRepId, setSelectedRepId] = useState<string | null>(null);
   const [isGasModalOpen, setIsGasModalOpen] = useState(false);
@@ -265,8 +240,6 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* ROW 1: HEADER */}
       <Header
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
         dashboardTitle={db.settings.Dashboard_Title}
         companyName={db.settings.Company_Name}
         lastUpdated={db.settings.Last_Data_Refresh}
