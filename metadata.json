@@ -1,0 +1,6 @@
+{
+  "name": "Sales Performance Dashboard – Executive Edition",
+  "description": "Hệ thống Dashboard quản trị hiệu suất bán hàng chuyên nghiệp dành cho Ban Giám đốc Xi măng Chinfon (CHINFON CEMENT Corp.). Tích hợp Google Sheets Database, Google Apps Script Backend, phân tích KPI thời gian thực, 8 biểu đồ BI điều hành, xếp hạng nhân viên, phân tích khu vực và xuất báo cáo Excel/PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
