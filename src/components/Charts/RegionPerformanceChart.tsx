@@ -10,7 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import { RegionPerformance } from '../../types';
-import { formatCurrencyVND } from '../../utils/formatters';
+import { useLanguage } from '../../services/i18n';
 
 interface Props {
   data: RegionPerformance[];
@@ -25,8 +25,11 @@ export const RegionPerformanceChart: React.FC<Props> = ({
   onSelectRegion,
   selectedRegionId,
 }) => {
+  const { language, t, formatCurrencyVND } = useLanguage();
+
   const chartData = data.map((d) => ({
     ...d,
+    localizedRegionName: t(d.regionId as any, d.regionName),
     revBillions: +(d.revenue / 1e9).toFixed(2),
   }));
 
@@ -35,10 +38,12 @@ export const RegionPerformanceChart: React.FC<Props> = ({
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight">
-            CHART 3: DOANH THU THEO KHU VỰC (REVENUE BY REGION)
+            CHART 3: {t('chartRegionTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Quy mô doanh thu, tỷ trọng đóng góp và tăng trưởng từng vùng địa bàn
+            {language === 'vi'
+              ? 'Quy mô doanh thu, tỷ trọng đóng góp và tăng trưởng từng vùng địa bàn'
+              : 'Revenue scale, contribution share, and growth across regional territories'}
           </p>
         </div>
       </div>
@@ -61,36 +66,36 @@ export const RegionPerformanceChart: React.FC<Props> = ({
             />
             <YAxis
               type="category"
-              dataKey="regionName"
+              dataKey="localizedRegionName"
               stroke="#94a3b8"
               fontSize={11}
               tickLine={false}
               axisLine={{ stroke: '#334155' }}
-              width={100}
+              width={110}
             />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const item = payload[0].payload as RegionPerformance;
+                  const item = payload[0].payload as RegionPerformance & { localizedRegionName: string };
                   return (
                     <div className="bg-slate-950 border border-slate-700 p-3 rounded shadow-xl text-xs space-y-1.5 font-mono">
                       <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
-                        {item.regionName} (QL: {item.manager})
+                        {item.localizedRegionName} ({language === 'vi' ? 'QL' : 'Mgr'}: {item.manager})
                       </p>
                       <div className="flex justify-between gap-4 text-blue-400">
-                        <span>Doanh thu:</span>
+                        <span>{language === 'vi' ? 'Doanh thu:' : 'Revenue:'}</span>
                         <span className="font-bold tabular-nums">{formatCurrencyVND(item.revenue, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-slate-300">
-                        <span>Tỷ trọng doanh thu:</span>
+                        <span>{language === 'vi' ? 'Tỷ trọng doanh thu:' : 'Revenue Share:'}</span>
                         <span className="font-bold tabular-nums">{item.share.toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between gap-4 text-emerald-400">
-                        <span>Tăng trưởng YoY:</span>
+                        <span>{t('kpiYoYGrowth')}:</span>
                         <span className="tabular-nums">{item.growth >= 0 ? '+' : ''}{item.growth.toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between gap-4 text-indigo-400">
-                        <span>Hoàn thành chỉ tiêu:</span>
+                        <span>{language === 'vi' ? 'Hoàn thành chỉ tiêu:' : 'Quota Achievement:'}</span>
                         <span className="tabular-nums">{item.achievement.toFixed(1)}%</span>
                       </div>
                     </div>
@@ -101,7 +106,7 @@ export const RegionPerformanceChart: React.FC<Props> = ({
             />
             <Bar
               dataKey="revBillions"
-              name="Doanh thu"
+              name={language === 'vi' ? 'Doanh thu' : 'Revenue'}
               radius={[0, 4, 4, 0]}
               barSize={20}
               cursor="pointer"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Filter, RotateCcw, Calendar, MapPin, User, Package, Layers } from 'lucide-react';
 import { FilterState, Region, Channel, SalesRep, Product } from '../types';
+import { useLanguage } from '../services/i18n';
 
 interface FilterBarProps {
   filters: FilterState;
@@ -21,6 +22,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   salesReps,
   products,
 }) => {
+  const { language, t } = useLanguage();
+
   // Extract distinct categories
   const categories = React.useMemo(() => {
     return Array.from(new Set(products.map((p) => p.Category)));
@@ -57,7 +60,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     filters.year !== 2026;
 
   return (
-    <div className="bg-slate-900/95 border-b border-slate-800 backdrop-blur py-2.5 sm:py-3 px-3 sm:px-6 lg:px-8">
+    <div className="bg-slate-900/95 border-b border-slate-800/90 backdrop-blur py-2 sm:py-2.5 px-3 sm:px-6 lg:px-8 shadow-sm">
       <div className="max-w-[1720px] mx-auto flex flex-col gap-2.5 sm:gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
           {/* Left: Filter Controls Grid */}
@@ -65,7 +68,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Filter Icon & Label */}
             <div className="flex items-center gap-1.5 text-slate-400 font-semibold uppercase tracking-wider text-[11px] pr-2 border-r border-slate-800 shrink-0">
               <Filter className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden xs:inline">Bộ lọc:</span>
+              <span className="hidden xs:inline">{t('filterLabel')}</span>
             </div>
 
             {/* Year Selector */}
@@ -107,7 +110,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {p === '9M' ? 'Toàn kỳ (9T)' : p}
+                  {p === '9M' ? t('periodAll') : p}
                 </button>
               ))}
             </div>
@@ -115,7 +118,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Month Range Selectors */}
             <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded border border-slate-700 text-slate-300">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>T</span>
+              <span>{language === 'vi' ? 'T' : 'M'}</span>
               <select
                 value={filters.startMonth}
                 onChange={(e) => {
@@ -132,7 +135,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 ))}
               </select>
               <span className="text-slate-500">→</span>
-              <span>T</span>
+              <span>{language === 'vi' ? 'T' : 'M'}</span>
               <select
                 value={filters.endMonth}
                 onChange={(e) => {
@@ -162,11 +165,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="bg-transparent text-white font-medium focus:outline-none cursor-pointer max-w-[130px]"
               >
                 <option value="ALL" className="bg-slate-900 text-white">
-                  Tất cả Khu vực
+                  {t('allRegions')}
                 </option>
                 {regions.map((r) => (
                   <option key={r.Region_ID} value={r.Region_ID} className="bg-slate-900 text-white">
-                    {r.Region_Name}
+                    {t(r.Region_ID as any, r.Region_Name)}
                   </option>
                 ))}
               </select>
@@ -181,7 +184,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="bg-transparent text-white font-medium focus:outline-none cursor-pointer max-w-[140px]"
               >
                 <option value="ALL" className="bg-slate-900 text-white">
-                  Tất cả Nhân viên
+                  {t('allReps')}
                 </option>
                 {availableReps.map((r) => (
                   <option key={r.Sales_Rep_ID} value={r.Sales_Rep_ID} className="bg-slate-900 text-white">
@@ -200,11 +203,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="bg-transparent text-white font-medium focus:outline-none cursor-pointer max-w-[140px]"
               >
                 <option value="ALL" className="bg-slate-900 text-white">
-                  Tất cả Nhóm SP
+                  {t('allCategories')}
                 </option>
                 {categories.map((c) => (
                   <option key={c} value={c} className="bg-slate-900 text-white">
-                    {c}
+                    {t(c as any, c)}
                   </option>
                 ))}
               </select>
@@ -219,11 +222,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="bg-transparent text-white font-medium focus:outline-none cursor-pointer max-w-[130px]"
               >
                 <option value="ALL" className="bg-slate-900 text-white">
-                  Tất cả Kênh
+                  {t('allChannels')}
                 </option>
                 {channels.map((c) => (
                   <option key={c.Channel_ID} value={c.Channel_ID} className="bg-slate-900 text-white">
-                    {c.Channel_Name}
+                    {t(c.Channel_ID as any, c.Channel_Name)}
                   </option>
                 ))}
               </select>
@@ -236,27 +239,32 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               type="button"
               onClick={onResetFilters}
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-amber-300 hover:text-white bg-amber-950/40 hover:bg-amber-900/60 rounded border border-amber-800/50 transition-colors cursor-pointer shrink-0"
-              title="Đặt lại toàn bộ bộ lọc về mặc định"
+              title={language === 'vi' ? 'Đặt lại toàn bộ bộ lọc về mặc định' : 'Reset all filters to default'}
             >
               <RotateCcw className="w-3 h-3 text-amber-400" />
-              <span>Xóa bộ lọc</span>
+              <span>{t('resetFilters')}</span>
             </button>
           )}
         </div>
 
         {/* Filter Breadcrumbs Summary */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-400">
-          <span className="text-slate-500">Phạm vi tính toán:</span>
-          <span className="text-slate-200 font-medium">Năm {filters.year}</span>
+          <span className="text-slate-500">{language === 'vi' ? 'Phạm vi tính toán:' : 'Analytical Scope:'}</span>
+          <span className="text-slate-200 font-medium">
+            {language === 'vi' ? `Năm ${filters.year}` : `Year ${filters.year}`}
+          </span>
           <span aria-hidden="true" className="text-slate-600">·</span>
           <span className="text-slate-200 font-medium">
-            Tháng {filters.startMonth} - Tháng {filters.endMonth} (Đối chiếu {filters.year - 1})
+            {language === 'vi'
+              ? `Tháng ${filters.startMonth} - Tháng ${filters.endMonth} (Đối chiếu ${filters.year - 1})`
+              : `Month ${filters.startMonth} - Month ${filters.endMonth} (vs ${filters.year - 1})`}
           </span>
           {filters.regionId !== 'ALL' && (
             <>
               <span aria-hidden="true" className="text-slate-600">·</span>
               <span className="text-blue-400 font-medium">
-                Vùng: {regions.find((r) => r.Region_ID === filters.regionId)?.Region_Name}
+                {language === 'vi' ? 'Vùng: ' : 'Region: '}
+                {t(filters.regionId as any, regions.find((r) => r.Region_ID === filters.regionId)?.Region_Name || '')}
               </span>
             </>
           )}
@@ -271,14 +279,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {filters.category !== 'ALL' && (
             <>
               <span aria-hidden="true" className="text-slate-600">·</span>
-              <span className="text-blue-400 font-medium">Nhóm: {filters.category}</span>
+              <span className="text-blue-400 font-medium">
+                {language === 'vi' ? 'Nhóm: ' : 'Category: '}
+                {t(filters.category as any, filters.category)}
+              </span>
             </>
           )}
           {filters.channelId !== 'ALL' && (
             <>
               <span aria-hidden="true" className="text-slate-600">·</span>
               <span className="text-blue-400 font-medium">
-                Kênh: {channels.find((c) => c.Channel_ID === filters.channelId)?.Channel_Name}
+                {language === 'vi' ? 'Kênh: ' : 'Channel: '}
+                {t(filters.channelId as any, channels.find((c) => c.Channel_ID === filters.channelId)?.Channel_Name || '')}
               </span>
             </>
           )}

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ArrowUpDown, ChevronUp, ChevronDown, User, ExternalLink } from 'lucide-react';
 import { SalesRepLeaderboardItem } from '../types';
-import { formatCurrencyVND, formatPercent } from '../utils/formatters';
+import { formatPercent } from '../utils/formatters';
+import { useLanguage } from '../services/i18n';
 
 interface Props {
   leaderboard: SalesRepLeaderboardItem[];
@@ -21,6 +22,7 @@ type SortField =
   | 'orders';
 
 export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) => {
+  const { language, t, formatCurrencyVND, formatNumber } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sortField, setSortField] = useState<SortField>('revenue');
@@ -62,10 +64,10 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
         <div>
           <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
             <User className="w-4 h-4 text-blue-400 shrink-0" />
-            BẢNG XẾP HẠNG VÀ ĐÁNH GIÁ HIỆU SUẤT NHÂN VIÊN KINH DOANH
+            {t('repsTableTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Theo dõi doanh thu, chỉ tiêu, tỷ lệ đạt, biên lợi nhuận và xếp loại theo quy chế (Nhấp chuột vào hàng để xem chi tiết)
+            {t('repsTableSub')}
           </p>
         </div>
 
@@ -75,7 +77,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm tên nhân viên, vùng..."
+              placeholder={t('searchRepsPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-full"
@@ -94,14 +96,14 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 }`}
               >
                 {st === 'ALL'
-                  ? 'Tất cả'
+                  ? (language === 'vi' ? 'Tất cả' : 'All')
                   : st === 'Excellent'
-                  ? 'Xuất sắc'
+                  ? (language === 'vi' ? 'Xuất sắc' : 'Outstanding')
                   : st === 'Good'
-                  ? 'Đạt'
+                  ? (language === 'vi' ? 'Đạt' : 'On Track')
                   : st === 'Warning'
-                  ? 'Cảnh báo'
-                  : 'Dưới chỉ tiêu'}
+                  ? (language === 'vi' ? 'Cảnh báo' : 'Warning')
+                  : (language === 'vi' ? 'Dưới chỉ tiêu' : 'Below Target')}
               </button>
             ))}
           </div>
@@ -109,7 +111,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
       </div>
 
       <div className="sm:hidden text-[10px] text-slate-500 mb-1 flex items-center justify-end">
-        <span>← Vuốt ngang để xem đủ chỉ số →</span>
+        <span>{language === 'vi' ? '← Vuốt ngang để xem đủ chỉ số →' : '← Scroll horizontally for more metrics →'}</span>
       </div>
 
       {/* High-density table */}
@@ -122,7 +124,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 cursor-pointer hover:text-white"
               >
                 <div className="flex items-center gap-1">
-                  <span>Hạng</span>
+                  <span>{t('colRank')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -131,7 +133,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 cursor-pointer hover:text-white"
               >
                 <div className="flex items-center gap-1">
-                  <span>Nhân viên</span>
+                  <span>{t('colRepName')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -140,7 +142,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 cursor-pointer hover:text-white"
               >
                 <div className="flex items-center gap-1">
-                  <span>Khu vực</span>
+                  <span>{t('colRegion')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -149,7 +151,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Doanh thu</span>
+                  <span>{t('colRevenue')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -158,7 +160,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Chỉ tiêu</span>
+                  <span>{t('colTarget')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -167,7 +169,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Hoàn thành</span>
+                  <span>{t('colAchievement')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -176,7 +178,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Tăng trưởng</span>
+                  <span>YoY</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -185,7 +187,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Lợi nhuận</span>
+                  <span>{t('kpiGrossProfit')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -194,7 +196,7 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Biên LN</span>
+                  <span>{t('colMargin')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
@@ -203,12 +205,12 @@ export const SalesRepsTable: React.FC<Props> = ({ leaderboard, onSelectRep }) =>
                 className="py-2.5 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span>Đơn hàng</span>
+                  <span>{t('colOrders')}</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-500" />
                 </div>
               </th>
-              <th className="py-2.5 px-3 text-center">Đánh giá</th>
-              <th className="py-2.5 px-2 text-center">Chi tiết</th>
+              <th className="py-2.5 px-3 text-center">{t('colStatus')}</th>
+              <th className="py-2.5 px-2 text-center">{language === 'vi' ? 'Chi tiết' : 'Action'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80">

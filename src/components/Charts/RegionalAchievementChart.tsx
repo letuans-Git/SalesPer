@@ -11,14 +11,18 @@ import {
   Cell,
 } from 'recharts';
 import { RegionPerformance } from '../../types';
+import { useLanguage } from '../../services/i18n';
 
 interface Props {
   data: RegionPerformance[];
 }
 
 export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
+  const { language, t } = useLanguage();
+
   const chartData = data.map((d) => ({
     ...d,
+    localizedRegionName: t(d.regionId as any, d.regionName),
     achievementRate: +d.achievement.toFixed(1),
   }));
 
@@ -27,10 +31,12 @@ export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight">
-            CHART 8: TỶ LỆ HOÀN THÀNH CHỈ TIÊU THEO VÙNG (REGIONAL ACHIEVEMENT)
+            CHART 8: {t('chartRegionalAchvTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Mức độ đạt kế hoạch từng khu vực kinh doanh so với đường chuẩn 100%
+            {language === 'vi'
+              ? 'Mức độ đạt kế hoạch từng khu vực kinh doanh so với đường chuẩn 100%'
+              : 'Quota achievement rate by regional territory against 100% benchmark line'}
           </p>
         </div>
       </div>
@@ -40,7 +46,7 @@ export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
           <BarChart data={chartData} margin={{ top: 15, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
             <XAxis
-              dataKey="regionName"
+              dataKey="localizedRegionName"
               stroke="#64748b"
               fontSize={11}
               tickLine={false}
@@ -57,22 +63,22 @@ export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const item = payload[0].payload as RegionPerformance;
+                  const item = payload[0].payload as RegionPerformance & { localizedRegionName: string };
                   return (
                     <div className="bg-slate-950 border border-slate-700 p-3 rounded shadow-xl text-xs space-y-1.5 font-mono">
                       <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
-                        {item.regionName} (QL: {item.manager})
+                        {item.localizedRegionName} ({language === 'vi' ? 'QL' : 'Mgr'}: {item.manager})
                       </p>
                       <div className="flex justify-between gap-4 text-blue-400">
-                        <span>Hoàn thành chỉ tiêu:</span>
+                        <span>{language === 'vi' ? 'Hoàn thành chỉ tiêu:' : 'Quota Achievement:'}</span>
                         <span className="font-bold tabular-nums">{item.achievement.toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between gap-4 text-emerald-400">
-                        <span>Tăng trưởng:</span>
+                        <span>{t('kpiYoYGrowth')}:</span>
                         <span className="tabular-nums">{item.growth >= 0 ? '+' : ''}{item.growth.toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between gap-4 text-slate-400">
-                        <span>Biên lợi nhuận:</span>
+                        <span>{t('kpiGrossMargin')}:</span>
                         <span className="tabular-nums">{item.margin.toFixed(1)}%</span>
                       </div>
                     </div>
@@ -87,7 +93,7 @@ export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
               strokeWidth={2}
               strokeDasharray="4 4"
               label={{
-                value: 'Kế hoạch 100%',
+                value: language === 'vi' ? 'Kế hoạch 100%' : '100% Target',
                 position: 'insideTopRight',
                 fill: '#f59e0b',
                 fontSize: 11,
@@ -96,7 +102,7 @@ export const RegionalAchievementChart: React.FC<Props> = ({ data }) => {
             />
             <Bar
               dataKey="achievementRate"
-              name="Tỷ lệ đạt kế hoạch (%)"
+              name={language === 'vi' ? 'Tỷ lệ đạt kế hoạch (%)' : 'Plan Achievement (%)'}
               radius={[4, 4, 0, 0]}
               barSize={24}
             >

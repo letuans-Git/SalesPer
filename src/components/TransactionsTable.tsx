@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Download, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Transaction, Product, SalesRep, Region, Channel } from '../types';
-import { formatCurrencyVND, formatNumber } from '../utils/formatters';
 import { exportFilteredToCsv } from '../services/storage';
+import { useLanguage } from '../services/i18n';
 
 interface Props {
   transactions: Transaction[];
@@ -19,6 +19,7 @@ export const TransactionsTable: React.FC<Props> = ({
   regions,
   channels,
 }) => {
+  const { language, t, formatCurrencyVND, formatNumber } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [page, setPage] = useState(1);
@@ -78,10 +79,11 @@ export const TransactionsTable: React.FC<Props> = ({
         <div>
           <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
             <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-            SỔ CHI TIẾT GIAO DỊCH BÁN HÀNG (SALES_TRANSACTIONS)
+            {t('txnsTableTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Hiển thị {filtered.length.toLocaleString()} dòng giao dịch thỏa mãn bộ lọc hiện hành
+            {t('showingTxns')} {filtered.length.toLocaleString()}{' '}
+            {language === 'vi' ? 'dòng giao dịch thỏa mãn bộ lọc hiện hành' : 'transactions matching active filters'}
           </p>
         </div>
 
@@ -91,7 +93,7 @@ export const TransactionsTable: React.FC<Props> = ({
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm mã đơn, khách hàng, sản phẩm..."
+              placeholder={t('searchTxnsPlaceholder')}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -117,14 +119,14 @@ export const TransactionsTable: React.FC<Props> = ({
                 }`}
               >
                 {st === 'ALL'
-                  ? 'Tất cả'
+                  ? language === 'vi' ? 'Tất cả' : 'All'
                   : st === 'Completed'
-                  ? 'Hoàn tất'
+                  ? t('statusCompleted')
                   : st === 'Delivered'
-                  ? 'Đã giao'
+                  ? language === 'vi' ? 'Đã giao' : 'Delivered'
                   : st === 'Pending'
-                  ? 'Đang xử lý'
-                  : 'Đã hủy'}
+                  ? t('statusPending')
+                  : t('statusCancelled')}
               </button>
             ))}
           </div>
@@ -133,16 +135,16 @@ export const TransactionsTable: React.FC<Props> = ({
           <button
             onClick={handleExportCsv}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors cursor-pointer shrink-0"
-            title="Xuất bảng này ra file CSV"
+            title={language === 'vi' ? 'Xuất bảng này ra file CSV' : 'Export this table to CSV'}
           >
             <Download className="w-3.5 h-3.5 text-slate-300" />
-            <span>Tải CSV</span>
+            <span>{language === 'vi' ? 'Tải CSV' : 'Export CSV'}</span>
           </button>
         </div>
       </div>
 
       <div className="sm:hidden text-[10px] text-slate-500 mb-1 flex items-center justify-end">
-        <span>← Vuốt ngang để xem đủ cột giao dịch →</span>
+        <span>{language === 'vi' ? '← Vuốt ngang để xem đủ cột giao dịch →' : '← Swipe horizontally to view all columns →'}</span>
       </div>
 
       {/* Table */}
@@ -150,55 +152,61 @@ export const TransactionsTable: React.FC<Props> = ({
         <table className="w-full text-left text-xs border-collapse min-w-[850px]">
           <thead>
             <tr className="bg-slate-950/60 text-slate-400 border-b border-slate-800 font-semibold tracking-wider uppercase text-[11px]">
-              <th className="py-2.5 px-3">Mã Đơn / Ngày</th>
-              <th className="py-2.5 px-3">Khách hàng</th>
-              <th className="py-2.5 px-3">Sản phẩm</th>
-              <th className="py-2.5 px-3">Khu vực / Sales</th>
-              <th className="py-2.5 px-3 text-right">Số lượng</th>
-              <th className="py-2.5 px-3 text-right">Doanh thu thuần</th>
-              <th className="py-2.5 px-3 text-right">Lợi nhuận gộp</th>
-              <th className="py-2.5 px-3 text-center">Trạng thái</th>
+              <th className="py-2.5 px-3">{language === 'vi' ? 'Mã Đơn / Ngày' : 'Order ID / Date'}</th>
+              <th className="py-2.5 px-3">{t('colCustomer')}</th>
+              <th className="py-2.5 px-3">{t('colProduct')}</th>
+              <th className="py-2.5 px-3">{language === 'vi' ? 'Khu vực / Sales' : 'Region / Rep'}</th>
+              <th className="py-2.5 px-3 text-right">{t('colQty')}</th>
+              <th className="py-2.5 px-3 text-right">{t('colNetRev')}</th>
+              <th className="py-2.5 px-3 text-right">{t('colProfit')}</th>
+              <th className="py-2.5 px-3 text-center">{t('colOrderStatus')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80">
-            {currentRows.map((t) => (
-              <tr key={t.Transaction_ID} className="hover:bg-slate-800/50 transition-colors">
+            {currentRows.map((tRow) => (
+              <tr key={tRow.Transaction_ID} className="hover:bg-slate-800/50 transition-colors">
                 <td className="py-2 px-3 font-mono">
-                  <div className="text-white font-medium">{t.Order_ID}</div>
-                  <div className="text-[11px] text-slate-400">{t.Order_Date}</div>
+                  <div className="text-white font-medium">{tRow.Order_ID}</div>
+                  <div className="text-[11px] text-slate-400">{tRow.Order_Date}</div>
                 </td>
-                <td className="py-2 px-3 font-medium text-slate-200 max-w-[200px] truncate" title={t.Customer_Name}>
-                  {t.Customer_Name}
+                <td className="py-2 px-3 font-medium text-slate-200 max-w-[200px] truncate" title={tRow.Customer_Name}>
+                  {tRow.Customer_Name}
                 </td>
-                <td className="py-2 px-3 text-slate-300 max-w-[200px] truncate" title={productMap.get(t.Product_ID)}>
-                  {productMap.get(t.Product_ID) || t.Product_ID}
+                <td className="py-2 px-3 text-slate-300 max-w-[200px] truncate" title={productMap.get(tRow.Product_ID)}>
+                  {t(productMap.get(tRow.Product_ID) as any, productMap.get(tRow.Product_ID) || tRow.Product_ID)}
                 </td>
                 <td className="py-2 px-3 text-slate-400">
-                  <div>{regionMap.get(t.Region_ID)}</div>
-                  <div className="text-[11px] text-slate-300">{repMap.get(t.Sales_Rep_ID)}</div>
+                  <div>{t(tRow.Region_ID as any, regionMap.get(tRow.Region_ID) || tRow.Region_ID)}</div>
+                  <div className="text-[11px] text-slate-300">{repMap.get(tRow.Sales_Rep_ID)}</div>
                 </td>
                 <td className="py-2 px-3 text-right font-mono text-slate-200 tabular-nums">
-                  {formatNumber(t.Quantity)} Tấn
+                  {formatNumber(tRow.Quantity)} {t('tonUnit')}
                 </td>
                 <td className="py-2 px-3 text-right font-mono font-medium text-slate-100 tabular-nums">
-                  {formatCurrencyVND(t.Net_Revenue, true)}
+                  {formatCurrencyVND(tRow.Net_Revenue, true)}
                 </td>
                 <td className="py-2 px-3 text-right font-mono text-emerald-400 tabular-nums">
-                  {formatCurrencyVND(t.Gross_Profit, true)}
+                  {formatCurrencyVND(tRow.Gross_Profit, true)}
                 </td>
                 <td className="py-2 px-3 text-center">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
-                      t.Order_Status === 'Completed'
+                      tRow.Order_Status === 'Completed'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : t.Order_Status === 'Delivered'
+                        : tRow.Order_Status === 'Delivered'
                         ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                        : t.Order_Status === 'Pending'
+                        : tRow.Order_Status === 'Pending'
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                         : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                     }`}
                   >
-                    {t.Order_Status}
+                    {tRow.Order_Status === 'Completed'
+                      ? t('statusCompleted')
+                      : tRow.Order_Status === 'Delivered'
+                      ? language === 'vi' ? 'Đã giao' : 'Delivered'
+                      : tRow.Order_Status === 'Pending'
+                      ? t('statusPending')
+                      : t('statusCancelled')}
                   </span>
                 </td>
               </tr>
@@ -210,9 +218,9 @@ export const TransactionsTable: React.FC<Props> = ({
       {/* Pagination Footer */}
       <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
         <div>
-          Trang <span className="font-mono text-white font-medium">{page}</span> /{' '}
-          <span className="font-mono text-white font-medium">{totalPages}</span> (Tổng{' '}
-          {filtered.length.toLocaleString()} dòng)
+          {language === 'vi' ? 'Trang' : 'Page'} <span className="font-mono text-white font-medium">{page}</span> /{' '}
+          <span className="font-mono text-white font-medium">{totalPages}</span> ({language === 'vi' ? 'Tổng' : 'Total'}{' '}
+          {filtered.length.toLocaleString()} {language === 'vi' ? 'dòng' : 'records'})
         </div>
         <div className="flex items-center gap-2">
           <button

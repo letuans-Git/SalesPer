@@ -1,18 +1,14 @@
 import React from 'react';
 import {
   RotateCcw,
-  Download,
-  Database,
-  FileSpreadsheet,
-  CheckCircle2,
-  Sparkles,
   Printer,
   Globe,
-  RefreshCw,
   Sun,
   Moon,
+  Languages,
 } from 'lucide-react';
 import { ThemeMode } from '../services/theme';
+import { useLanguage } from '../services/i18n';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -23,11 +19,11 @@ interface HeaderProps {
   isPublishedConnected: boolean;
   isSyncing: boolean;
   onRefresh: () => void;
-  onOpenPublishedModal: () => void;
-  onOpenExportModal: () => void;
-  onOpenGasModal: () => void;
-  onOpenTestModal: () => void;
-  onOpenGenerateModal: () => void;
+  onOpenPublishedModal?: () => void;
+  onOpenExportModal?: () => void;
+  onOpenGasModal?: () => void;
+  onOpenTestModal?: () => void;
+  onOpenGenerateModal?: () => void;
   onPrint: () => void;
 }
 
@@ -40,25 +36,23 @@ export const Header: React.FC<HeaderProps> = ({
   isPublishedConnected,
   isSyncing,
   onRefresh,
-  onOpenPublishedModal,
-  onOpenExportModal,
-  onOpenGasModal,
-  onOpenTestModal,
-  onOpenGenerateModal,
   onPrint,
 }) => {
+  const { language, toggleLanguage, t } = useLanguage();
+
   const formattedDate = React.useMemo(() => {
     try {
       const d = new Date(lastUpdated);
-      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
-        ' · ' + d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const locale = language === 'vi' ? 'vi-VN' : 'en-US';
+      return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+        ' · ' + d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
     } catch {
       return lastUpdated;
     }
-  }, [lastUpdated]);
+  }, [lastUpdated, language]);
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-md">
+    <header className="bg-slate-900 border-b border-slate-800 shadow-sm">
       {/* Executive Top Row */}
       <div className="max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         {/* Zone 1: Brand & Identity */}
@@ -74,125 +68,83 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm sm:text-base font-bold tracking-tight text-white truncate max-w-[200px] sm:max-w-none">
-                  {companyName || 'CHINFON CEMENT Corp.'}
+                  {companyName || t('defaultCompany')}
                 </span>
                 {isPublishedConnected ? (
                   <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0">
                     <Globe className="w-3 h-3 text-emerald-400" />
-                    LIVE GOOGLE SHEETS
+                    {t('liveGoogleSheets')}
                   </span>
                 ) : (
                   <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                    DEMO DATA
+                    {t('demoData')}
                   </span>
                 )}
               </div>
               <p className="text-[11px] sm:text-xs text-slate-400 font-medium tracking-wide truncate sm:whitespace-normal">
-                {dashboardTitle || 'SALES PERFORMANCE DASHBOARD – EXECUTIVE EDITION'}
+                {dashboardTitle || t('appTitle')}
               </p>
             </div>
           </div>
 
           <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400 pl-4 border-l border-slate-800 shrink-0">
-            <span>Cập nhật:</span>
+            <span>{t('lastUpdatedLabel')}</span>
             <span className="font-mono text-slate-300">{formattedDate}</span>
           </div>
         </div>
 
-        {/* Zone 2: Navigation Links (hidden on mobile, visible on desktop/laptop) */}
-        <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-xs font-medium text-slate-300">
-          <a href="#kpi-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Chỉ số KPI
+        {/* Zone 2: Navigation Links (always visible at top of page across all devices including mobile) */}
+        <nav className="flex items-center gap-2 sm:gap-3 lg:gap-5 xl:gap-6 text-[11px] sm:text-xs font-medium text-slate-300 w-full lg:w-auto order-3 lg:order-none overflow-x-auto scrollbar-none py-1 lg:py-0 border-t lg:border-t-0 border-slate-800/80 -mx-1 px-1 shrink-0">
+          <a href="#kpi-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navKpi')}
           </a>
-          <a href="#trend-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Xu hướng & Chỉ tiêu
+          <a href="#trend-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navTrend')}
           </a>
-          <a href="#mix-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Cơ cấu Kinh doanh
+          <a href="#mix-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navMix')}
           </a>
-          <a href="#reps-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Xếp hạng Nhân viên
+          <a href="#reps-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navReps')}
           </a>
-          <a href="#insights-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Nhận định Điều hành
+          <a href="#insights-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navInsights')}
           </a>
-          <a href="#transactions-section" className="hover:text-blue-400 transition-colors whitespace-nowrap">
-            Giao dịch Chi tiết
+          <a href="#transactions-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+            {t('navTransactions')}
           </a>
         </nav>
 
         {/* Zone 3: Executive Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 max-w-full overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none shrink-0">
-          {/* Published Google Sheet Auto-Sync Button */}
+          {/* Language Toggle: Tiếng Anh - Tiếng Việt */}
           <button
-            disabled
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded border opacity-50 cursor-not-allowed shadow-sm select-none shrink-0 ${
-              isPublishedConnected
-                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-600/70'
-                : 'bg-blue-600/60 text-white/80 border-blue-400/30'
-            }`}
-            title="Đồng bộ Sheet Web (Đã vô hiệu hóa)"
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded border border-blue-500/50 bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm"
+            title={language === 'vi' ? 'Đang dùng Tiếng Việt · Nhấn để chuyển sang Tiếng Anh (English)' : 'Currently in English · Click to switch to Vietnamese (Tiếng Việt)'}
           >
-            <Globe className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-            <span className="hidden md:inline">{isPublishedConnected ? 'Sheet Web: Đang liên kết' : 'Đồng bộ Sheet Web'}</span>
-            <span className="md:hidden">Sheet Web</span>
-          </button>
-
-          {/* Integrity Test Suite */}
-          <button
-            disabled
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/60 rounded border border-slate-700/60 opacity-50 cursor-not-allowed select-none shrink-0"
-            title="Kiểm thử tính chính xác 12 quy tắc kinh doanh (Đã vô hiệu hóa)"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
-            <span className="hidden sm:inline">Kiểm tra KPI</span>
-          </button>
-
-          {/* Google Sheets / GAS Sync */}
-          <button
-            disabled
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/60 rounded border border-slate-700/60 opacity-50 cursor-not-allowed select-none shrink-0"
-            title="Xem và tải mã Google Apps Script hoặc kết nối Google Sheets Web App (Đã vô hiệu hóa)"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-400/70 shrink-0" />
-            <span className="hidden sm:inline">Google Sheets / GAS</span>
-          </button>
-
-          {/* Regenerate Demo Data */}
-          <button
-            disabled
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-amber-200/70 bg-amber-950/40 rounded border border-amber-800/40 opacity-50 cursor-not-allowed select-none shrink-0"
-            title="Tạo lại bộ dữ liệu DEMO tự động (Đã vô hiệu hóa)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
-            <span className="hidden sm:inline">Generate Data</span>
-          </button>
-
-          {/* Export Report */}
-          <button
-            disabled
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-800/60 rounded border border-slate-700/60 opacity-50 cursor-not-allowed select-none shrink-0"
-            title="Xuất báo cáo Excel / PDF (Đã vô hiệu hóa)"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="hidden sm:inline">Xuất Báo cáo</span>
+            <Languages className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span className="font-mono tracking-wide">{language === 'vi' ? 'EN' : 'VI'}</span>
+            <span className="hidden md:inline text-[11px] font-normal text-blue-300/80">
+              {language === 'vi' ? 'English' : 'Tiếng Việt'}
+            </span>
           </button>
 
           {/* Theme Toggle Button: Trắng - Đen */}
           <button
             onClick={onToggleTheme}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm"
-            title={theme === 'light' ? 'Đang dùng nền Trắng · Nhấn để chuyển sang nền Đen' : 'Đang dùng nền Đen · Nhấn để chuyển sang nền Trắng'}
+            title={theme === 'light' ? t('themeLightTooltip') : t('themeDarkTooltip')}
           >
             {theme === 'light' ? (
               <>
                 <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="font-medium text-slate-200">Nền Đen</span>
+                <span className="font-medium text-slate-200">{t('themeDarkBtn')}</span>
               </>
             ) : (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-medium text-amber-200">Nền Trắng</span>
+                <span className="font-medium text-amber-200">{t('themeLightBtn')}</span>
               </>
             )}
           </button>
@@ -201,18 +153,21 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onPrint}
             className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors cursor-pointer shrink-0"
-            title="In / Xuất PDF Trang Điều hành"
+            title={t('printTooltip')}
           >
             <Printer className="w-4 h-4" />
           </button>
 
-          {/* Refresh */}
+          {/* Refresh: button */}
           <button
             onClick={onRefresh}
-            className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors cursor-pointer shrink-0"
-            title="Làm mới dữ liệu từ Google Sheets"
+            disabled={isSyncing}
+            className={`p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors cursor-pointer shrink-0 ${
+              isSyncing ? 'opacity-70 cursor-wait' : ''
+            }`}
+            title={isSyncing ? t('refreshSyncing') : t('refreshTooltip')}
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-blue-400' : ''}`} />
           </button>
         </div>
       </div>

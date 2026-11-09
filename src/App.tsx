@@ -42,9 +42,9 @@ import { DataVerificationModal } from './components/Modals/DataVerificationModal
 import { ExportModal } from './components/Modals/ExportModal';
 import { GenerateDataConfirmModal } from './components/Modals/GenerateDataConfirmModal';
 import { PublishedSheetModal } from './components/Modals/PublishedSheetModal';
-
 import { Zap, X as CloseIcon } from 'lucide-react';
 import { realtimeSheetService } from './services/realtime';
+import { useLanguage } from './services/i18n';
 
 const INITIAL_FILTERS: FilterState = {
   year: 2026,
@@ -58,6 +58,7 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 export default function App() {
+  const { language, t } = useLanguage();
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme());
   const [db, setDb] = useState<DatabaseState>(() => loadDatabase());
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -258,22 +259,62 @@ export default function App() {
   const activeInsights = customInsights || statisticalInsights;
 
   // Actions
+  // Actions: Lập tức lấy dữ liệu từ Google Sheet, tính toán chính xác 100% rồi hiển thị ra màn hình
   const handleRefresh = useCallback(async () => {
-    const pubUrl = getPublishedSheetUrl();
-    if (pubUrl) {
-      setIsSyncing(true);
-      const res = await syncPublishedGoogleSheet(pubUrl, db);
-      setIsSyncing(false);
-      if (res.success && res.newDb) {
-        setDb(res.newDb);
-        setCustomInsights(null);
-        return;
+    let pubUrl = getPublishedSheetUrl();
+    if (!pubUrl) {
+      const serverCfg = await fetchServerSheetConfig();
+      if (serverCfg.publishedUrl) {
+        pubUrl = serverCfg.publishedUrl;
+        savePublishedSheetUrl(pubUrl);
       }
     }
 
-    const reloaded = loadDatabase();
-    setDb({ ...reloaded, settings: { ...reloaded.settings, Last_Data_Refresh: new Date().toISOString() } });
-    setCustomInsights(null);
+    if (!pubUrl) {
+      // Nếu chưa có URL Google Sheet, mở bảng kết nối Google Sheet để người dùng dán link ngay
+      setIsPublishedModalOpen(true);
+      setRealtimeNotice({
+        message: 'Vui lòng dán liên kết Google Sheets đã xuất bản lên web để tải và tính toán số liệu trực tiếp.',
+        timestamp: new Date().toLocaleTimeString('vi-VN'),
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    const timeStr = new Date().toLocaleTimeString('vi-VN');
+    setRealtimeNotice({
+      message: `Đang lập tức lấy dữ liệu từ Google Sheets lúc ${timeStr}...`,
+      timestamp: timeStr,
+    });
+
+    try {
+      const res = await syncPublishedGoogleSheet(pubUrl, db);
+      setIsSyncing(false);
+
+      if (res.success && res.newDb) {
+        setDb(res.newDb);
+        setHasPublishedUrl(true);
+        setCustomInsights(null);
+        setRealtimeNotice({
+          message: `Đã lấy dữ liệu từ Google Sheets thành công! Hệ thống đã tính toán chính xác 100% (${res.rowCounts?.transactions || res.newDb.transactions.length} dòng giao dịch) và cập nhật lên màn hình.`,
+          timestamp: new Date().toLocaleTimeString('vi-VN'),
+        });
+        setTimeout(() => {
+          setRealtimeNotice(null);
+        }, 8000);
+      } else {
+        setRealtimeNotice({
+          message: `Lỗi kết nối Google Sheets: ${res.error || 'Vui lòng kiểm tra lại liên kết xuất bản'}.`,
+          timestamp: new Date().toLocaleTimeString('vi-VN'),
+        });
+      }
+    } catch (err: any) {
+      setIsSyncing(false);
+      setRealtimeNotice({
+        message: `Lỗi kết nối: ${err?.message || 'Không thể liên kết Google Sheets'}`,
+        timestamp: new Date().toLocaleTimeString('vi-VN'),
+      });
+    }
   }, [db]);
 
   const handleResetFilters = useCallback(() => {
@@ -291,58 +332,64 @@ export default function App() {
     window.print();
   }, []);
 
-  const periodLabel = `Năm ${filters.year} (Tháng ${filters.startMonth} - ${filters.endMonth})`;
+  const periodLabel =
+    language === 'vi'
+      ? `Năm ${filters.year} (Tháng ${filters.startMonth} - ${filters.endMonth})`
+      : `Year ${filters.year} (Month ${filters.startMonth} - ${filters.endMonth})`;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* ROW 1: HEADER */}
-      <Header
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        dashboardTitle={db.settings.Dashboard_Title}
-        companyName={db.settings.Company_Name}
-        lastUpdated={db.settings.Last_Data_Refresh}
-        isPublishedConnected={hasPublishedUrl}
-        isSyncing={isSyncing}
-        onRefresh={handleRefresh}
-        onOpenPublishedModal={() => setIsPublishedModalOpen(true)}
-        onOpenExportModal={() => setIsExportModalOpen(true)}
-        onOpenGasModal={() => setIsGasModalOpen(true)}
-        onOpenTestModal={() => setIsTestModalOpen(true)}
-        onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
-        onPrint={handlePrint}
-      />
-
-      {/* Real-time Change Notification Banner */}
-      {realtimeNotice && (
-        <div className="bg-emerald-600 border-b border-emerald-500 text-white text-xs px-4 py-2 shadow-lg flex items-center justify-between sticky top-[57px] z-30 animate-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center gap-2 max-w-[1720px] mx-auto w-full">
-            <Zap className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
-            <span className="font-semibold">{realtimeNotice.message}</span>
-          </div>
-          <button
-            onClick={() => setRealtimeNotice(null)}
-            className="p-1 hover:bg-emerald-700 rounded text-emerald-100 cursor-pointer"
-          >
-            <CloseIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* ROW 2: FILTERS (Sticky on laptops/desktops, fluid on mobile) */}
-      <div className="no-print lg:sticky lg:top-[57px] z-20">
-        <FilterBar
-          filters={filters}
-          onChangeFilters={(newFilters) => {
-            setFilters(newFilters);
-            setCustomInsights(null);
-          }}
-          onResetFilters={handleResetFilters}
-          regions={db.regions}
-          channels={db.channels}
-          salesReps={db.salesReps}
-          products={db.products}
+      {/* UNIFIED EXECUTIVE STICKY TOP DECK (Header + Notification + FilterBar pinned on all devices) */}
+      <div className="sticky top-0 z-30 shadow-md">
+        {/* ROW 1: HEADER */}
+        <Header
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          dashboardTitle={db.settings.Dashboard_Title}
+          companyName={db.settings.Company_Name}
+          lastUpdated={db.settings.Last_Data_Refresh}
+          isPublishedConnected={hasPublishedUrl}
+          isSyncing={isSyncing}
+          onRefresh={handleRefresh}
+          onOpenPublishedModal={() => setIsPublishedModalOpen(true)}
+          onOpenExportModal={() => setIsExportModalOpen(true)}
+          onOpenGasModal={() => setIsGasModalOpen(true)}
+          onOpenTestModal={() => setIsTestModalOpen(true)}
+          onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
+          onPrint={handlePrint}
         />
+
+        {/* Real-time Change Notification Banner */}
+        {realtimeNotice && (
+          <div className="bg-emerald-600 border-b border-emerald-500 text-white text-xs px-4 py-2 shadow-lg flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2 max-w-[1720px] mx-auto w-full">
+              <Zap className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+              <span className="font-semibold">{realtimeNotice.message}</span>
+            </div>
+            <button
+              onClick={() => setRealtimeNotice(null)}
+              className="p-1 hover:bg-emerald-700 rounded text-emerald-100 cursor-pointer"
+            >
+              <CloseIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* ROW 2: FILTERS (Always pinned together with Header, never scrolled away) */}
+        <div className="no-print">
+          <FilterBar
+            filters={filters}
+            onChangeFilters={(newFilters) => {
+              setFilters(newFilters);
+              setCustomInsights(null);
+            }}
+            onResetFilters={handleResetFilters}
+            regions={db.regions}
+            channels={db.channels}
+            salesReps={db.salesReps}
+            products={db.products}
+          />
+        </div>
       </div>
 
       {/* MAIN EXECUTIVE DASHBOARD VIEWPORT */}
@@ -426,18 +473,13 @@ export default function App() {
 
       {/* EXECUTIVE FOOTER */}
       <footer className="bg-slate-950 border-t border-slate-800/80 py-4 px-4 text-xs text-slate-500 text-center">
-        <div className="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="max-w-[1720px] mx-auto flex flex-wrap items-center justify-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             <span className="font-bold text-slate-400">CHINFON CEMENT Corp.</span>
             <span>·</span>
             <span>Sales Performance Dashboard – Executive Edition</span>
             <span>·</span>
             <span className="font-mono text-amber-400/90 font-medium">{db.settings.Demo_Data_Version}</span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Google Apps Script Backend Compatible</span>
-            <span>·</span>
-            <span>Google Sheets Database Active</span>
           </div>
         </div>
       </footer>

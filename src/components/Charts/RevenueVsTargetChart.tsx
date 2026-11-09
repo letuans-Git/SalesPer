@@ -8,10 +8,9 @@ import {
   Tooltip,
   Legend,
   CartesianGrid,
-  ReferenceLine,
 } from 'recharts';
 import { MonthlyTrendData } from '../../types';
-import { formatCurrencyVND } from '../../utils/formatters';
+import { useLanguage } from '../../services/i18n';
 
 interface Props {
   data: MonthlyTrendData[];
@@ -19,6 +18,8 @@ interface Props {
 }
 
 export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
+  const { language, t, formatCurrencyVND } = useLanguage();
+
   const chartData = data.map((d) => ({
     ...d,
     revBillions: +(d.revenue2026 / 1e9).toFixed(2),
@@ -31,10 +32,12 @@ export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight">
-            CHART 2: THỰC TẾ SO VỚI CHỈ TIÊU (REVENUE VS TARGET)
+            CHART 2: {t('chartRevenueVsTargetTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Đối chiếu Doanh thu thực tế vs Kế hoạch và Biên độ chênh lệch từng tháng (Đơn vị: Tỷ VNĐ)
+            {language === 'vi'
+              ? `Đối chiếu Doanh thu thực tế vs Kế hoạch và Biên độ chênh lệch từng tháng (Đơn vị: Tỷ VNĐ)`
+              : `Comparison of Actual Revenue vs Target Plan and Monthly Variance (Unit: Billion VND)`}
           </p>
         </div>
       </div>
@@ -49,6 +52,7 @@ export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
               fontSize={11}
               tickLine={false}
               axisLine={{ stroke: '#334155' }}
+              tickFormatter={(val: string) => (language === 'en' ? val.replace('Tháng ', 'M') : val)}
             />
             <YAxis
               stroke="#64748b"
@@ -66,14 +70,14 @@ export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
                   return (
                     <div className="bg-slate-950 border border-slate-700 p-3 rounded shadow-xl text-xs space-y-1.5 font-mono">
                       <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
-                        Tháng {item.month} / {year}
+                        {language === 'vi' ? `Tháng ${item.month} / ${year}` : `Month ${item.month} / ${year}`}
                       </p>
                       <div className="flex justify-between gap-4 text-blue-400">
-                        <span>Doanh thu Thực tế:</span>
+                        <span>{language === 'vi' ? 'Doanh thu Thực tế:' : 'Actual Revenue:'}</span>
                         <span className="font-bold tabular-nums">{formatCurrencyVND(item.revenue2026, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-indigo-400">
-                        <span>Chỉ tiêu Giao:</span>
+                        <span>{language === 'vi' ? 'Chỉ tiêu Kế hoạch:' : 'Target Plan:'}</span>
                         <span className="tabular-nums">{formatCurrencyVND(item.target2026, true)}</span>
                       </div>
                       <div
@@ -81,7 +85,7 @@ export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
                           variance >= 0 ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >
-                        <span>Chênh lệch ({rate.toFixed(1)}%):</span>
+                        <span>{language === 'vi' ? `Chênh lệch (${rate.toFixed(1)}%):` : `Variance (${rate.toFixed(1)}%):`}</span>
                         <span className="tabular-nums">
                           {variance >= 0 ? '+' : ''}{formatCurrencyVND(variance, true)}
                         </span>
@@ -99,14 +103,14 @@ export const RevenueVsTargetChart: React.FC<Props> = ({ data, year }) => {
             />
             <Bar
               dataKey="targetBillions"
-              name="Chỉ tiêu Kế hoạch"
+              name={language === 'vi' ? 'Chỉ tiêu Kế hoạch' : 'Target Plan'}
               fill="#4338ca"
               radius={[3, 3, 0, 0]}
               barSize={16}
             />
             <Bar
               dataKey="revBillions"
-              name="Doanh thu Thực tế"
+              name={language === 'vi' ? 'Doanh thu Thực tế' : 'Actual Revenue'}
               fill="#3b82f6"
               radius={[3, 3, 0, 0]}
               barSize={16}

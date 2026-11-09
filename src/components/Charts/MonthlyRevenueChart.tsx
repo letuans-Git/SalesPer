@@ -11,7 +11,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { MonthlyTrendData } from '../../types';
-import { formatCurrencyVND } from '../../utils/formatters';
+import { useLanguage } from '../../services/i18n';
 
 interface Props {
   data: MonthlyTrendData[];
@@ -19,6 +19,8 @@ interface Props {
 }
 
 export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
+  const { language, t, formatCurrencyVND } = useLanguage();
+
   const chartData = data.map((d) => ({
     ...d,
     rev2026Billions: +(d.revenue2026 / 1e9).toFixed(2),
@@ -31,10 +33,12 @@ export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight">
-            CHART 1: XU HƯỚNG DOANH THU THEO THÁNG (MONTHLY REVENUE TREND)
+            CHART 1: {t('chartMonthlyTrendTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            So sánh Doanh thu thực tế {year} vs Cùng kỳ {year - 1} vs Chỉ tiêu kế hoạch {year} (Đơn vị: Tỷ VNĐ)
+            {language === 'vi'
+              ? `So sánh Doanh thu thực tế ${year} vs Cùng kỳ ${year - 1} vs Chỉ tiêu kế hoạch ${year} (Đơn vị: Tỷ VNĐ)`
+              : `Comparison of Actual Revenue ${year} vs Prior Year ${year - 1} vs Target Plan ${year} (Unit: Billion VND)`}
           </p>
         </div>
       </div>
@@ -49,6 +53,7 @@ export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
               fontSize={11}
               tickLine={false}
               axisLine={{ stroke: '#334155' }}
+              tickFormatter={(val: string) => (language === 'en' ? val.replace('Tháng ', 'M') : val)}
             />
             <YAxis
               stroke="#64748b"
@@ -58,28 +63,28 @@ export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
               tickFormatter={(v) => `${v}B`}
             />
             <Tooltip
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as MonthlyTrendData;
                   return (
                     <div className="bg-slate-950 border border-slate-700 p-3 rounded shadow-xl text-xs space-y-1.5 font-mono">
                       <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
-                        Tháng {item.month} / {year}
+                        {language === 'vi' ? `Tháng ${item.month} / ${year}` : `Month ${item.month} / ${year}`}
                       </p>
                       <div className="flex justify-between gap-4 text-blue-400">
-                        <span>Doanh thu {year}:</span>
+                        <span>{language === 'vi' ? `Doanh thu ${year}:` : `Actual Revenue ${year}:`}</span>
                         <span className="font-bold tabular-nums">{formatCurrencyVND(item.revenue2026, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-slate-400">
-                        <span>Doanh thu {year - 1}:</span>
+                        <span>{language === 'vi' ? `Doanh thu ${year - 1}:` : `Prior Year ${year - 1}:`}</span>
                         <span className="tabular-nums">{formatCurrencyVND(item.revenue2025, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-indigo-400">
-                        <span>Chỉ tiêu {year}:</span>
+                        <span>{language === 'vi' ? `Chỉ tiêu ${year}:` : `Target ${year}:`}</span>
                         <span className="tabular-nums">{formatCurrencyVND(item.target2026, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-emerald-400 pt-1 border-t border-slate-800">
-                        <span>Tăng trưởng YoY:</span>
+                        <span>{t('kpiYoYGrowth')}:</span>
                         <span className="font-bold tabular-nums">
                           {item.growth >= 0 ? '+' : ''}{item.growth.toFixed(1)}%
                         </span>
@@ -97,14 +102,14 @@ export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
             />
             <Bar
               dataKey="rev2025Billions"
-              name={`Năm ${year - 1}`}
+              name={language === 'vi' ? `Năm ${year - 1}` : `Year ${year - 1}`}
               fill="#475569"
               radius={[3, 3, 0, 0]}
               barSize={16}
             />
             <Bar
               dataKey="rev2026Billions"
-              name={`Thực tế ${year}`}
+              name={language === 'vi' ? `Thực tế ${year}` : `Actual ${year}`}
               fill="#2563eb"
               radius={[3, 3, 0, 0]}
               barSize={16}
@@ -112,7 +117,7 @@ export const MonthlyRevenueChart: React.FC<Props> = ({ data, year }) => {
             <Line
               type="monotone"
               dataKey="target2026Billions"
-              name={`Chỉ tiêu ${year}`}
+              name={language === 'vi' ? `Chỉ tiêu ${year}` : `Target ${year}`}
               stroke="#818cf8"
               strokeWidth={2}
               strokeDasharray="4 4"

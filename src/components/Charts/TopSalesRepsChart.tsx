@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'recharts';
 import { SalesRepLeaderboardItem } from '../../types';
-import { formatCurrencyVND } from '../../utils/formatters';
+import { useLanguage } from '../../services/i18n';
 
 interface Props {
   data: SalesRepLeaderboardItem[];
@@ -18,6 +18,8 @@ interface Props {
 }
 
 export const TopSalesRepsChart: React.FC<Props> = ({ data, onSelectRep }) => {
+  const { language, t, formatCurrencyVND } = useLanguage();
+
   const top10 = data.slice(0, 10).map((r) => ({
     ...r,
     revBillions: +(r.revenue / 1e9).toFixed(2),
@@ -29,10 +31,12 @@ export const TopSalesRepsChart: React.FC<Props> = ({ data, onSelectRep }) => {
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <h3 className="text-sm font-bold text-white tracking-tight">
-            CHART 6: TOP 10 NHÂN VIÊN XUẤT SẮC (TOP 10 SALES REPS)
+            CHART 6: {t('chartTopRepsTitle')}
           </h3>
           <p className="text-xs text-slate-400">
-            Xếp hạng theo Doanh thu thuần thực tế vs Chỉ tiêu kế hoạch (Nhấp chọn để xem hồ sơ)
+            {language === 'vi'
+              ? 'Xếp hạng theo Doanh thu thuần thực tế vs Chỉ tiêu kế hoạch (Nhấp chọn để xem hồ sơ)'
+              : 'Ranked by Actual Net Revenue vs Target Quota (Click bar to inspect profile)'}
           </p>
         </div>
       </div>
@@ -66,26 +70,32 @@ export const TopSalesRepsChart: React.FC<Props> = ({ data, onSelectRep }) => {
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as SalesRepLeaderboardItem;
+                  const localizedStatus =
+                    item.achievement >= 100
+                      ? t('statusHigh')
+                      : item.achievement >= 80
+                      ? t('statusMed')
+                      : t('statusLow');
                   return (
                     <div className="bg-slate-950 border border-slate-700 p-3 rounded shadow-xl text-xs space-y-1.5 font-mono">
                       <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
-                        #{item.rank} - {item.salesRepName} ({item.regionName})
+                        #{item.rank} - {item.salesRepName} ({t(item.regionId as any, item.regionName)})
                       </p>
                       <div className="flex justify-between gap-4 text-blue-400">
-                        <span>Doanh thu:</span>
+                        <span>{t('colRevenue')}:</span>
                         <span className="font-bold tabular-nums">{formatCurrencyVND(item.revenue, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-indigo-400">
-                        <span>Chỉ tiêu:</span>
+                        <span>{t('colTarget')}:</span>
                         <span className="tabular-nums">{formatCurrencyVND(item.target, true)}</span>
                       </div>
                       <div className="flex justify-between gap-4 text-emerald-400">
-                        <span>Tỷ lệ hoàn thành:</span>
+                        <span>{t('colAchievement')}:</span>
                         <span className="font-bold tabular-nums">{item.achievement.toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between gap-4 text-slate-300">
-                        <span>Đánh giá:</span>
-                        <span className="font-bold">{item.statusBadge}</span>
+                        <span>{t('colStatus')}:</span>
+                        <span className="font-bold">{localizedStatus}</span>
                       </div>
                     </div>
                   );
@@ -100,7 +110,7 @@ export const TopSalesRepsChart: React.FC<Props> = ({ data, onSelectRep }) => {
             />
             <Bar
               dataKey="revBillions"
-              name="Doanh thu thực tế"
+              name={language === 'vi' ? 'Doanh thu thực tế' : 'Actual Revenue'}
               fill="#2563eb"
               radius={[0, 3, 3, 0]}
               barSize={12}
@@ -109,7 +119,7 @@ export const TopSalesRepsChart: React.FC<Props> = ({ data, onSelectRep }) => {
             />
             <Bar
               dataKey="targetBillions"
-              name="Chỉ tiêu"
+              name={language === 'vi' ? 'Chỉ tiêu' : 'Target Quota'}
               fill="#4338ca"
               radius={[0, 3, 3, 0]}
               barSize={12}

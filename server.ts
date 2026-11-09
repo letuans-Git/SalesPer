@@ -183,6 +183,38 @@ function parseExcelDate(val: any): string {
   return s;
 }
 
+function parseNumeric(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  let str = String(val).trim();
+  // Remove currency units and symbols like VNĐ, đ, $, etc.
+  str = str.replace(/[^\d.,-]/g, '');
+  if (!str) return 0;
+
+  if (str.includes(',') && !str.includes('.')) {
+    if ((str.match(/,/g) || []).length > 1) {
+      str = str.replace(/,/g, '');
+    } else {
+      const parts = str.split(',');
+      if (parts[1] && parts[1].length === 3) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(',', '.');
+      }
+    }
+  } else if (str.includes('.') && str.includes(',')) {
+    if (str.indexOf('.') < str.indexOf(',')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      str = str.replace(/,/g, '');
+    }
+  } else if (str.includes('.') && (str.match(/\./g) || []).length > 1) {
+    str = str.replace(/\./g, '');
+  }
+  const n = parseFloat(str);
+  return isNaN(n) ? 0 : n;
+}
+
 // Endpoint: Fetch and parse Google Sheets Published to the Web
 app.post('/api/sheets/fetch-published', async (req, res) => {
   try {
@@ -240,13 +272,16 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
     const rawTxns = txnSheet ? XLSX.utils.sheet_to_json<any>(txnSheet, { defval: '' }) : [];
 
     const transactions = rawTxns.map((row, idx) => {
-      const qty = parseFloat(row['Quantity'] || row['Số lượng'] || 0) || 0;
-      const unitPrice = parseFloat(row['Unit_Price'] || row['Đơn giá'] || 0) || 0;
-      const grossRev = parseFloat(row['Gross_Revenue'] || row['Doanh thu trước giảm giá'] || 0) || (qty * unitPrice);
-      const discount = parseFloat(row['Discount'] || row['Chiết khấu'] || 0) || 0;
-      const netRev = parseFloat(row['Net_Revenue'] || row['Doanh thu sau giảm giá'] || row['Doanh thu thuần'] || 0) || (grossRev - discount);
-      const costAmount = parseFloat(row['Cost_Amount'] || row['Giá vốn'] || 0) || 0;
-      const grossProfit = parseFloat(row['Gross_Profit'] || row['Lợi nhuận gộp'] || 0) || (netRev - costAmount);
+      const qty = parseNumeric(row['Quantity'] ?? row['Số lượng']);
+      const unitPrice = parseNumeric(row['Unit_Price'] ?? row['Đơn giá']);
+      const explicitGross = parseNumeric(row['Gross_Revenue'] ?? row['Doanh thu trước giảm giá']);
+      const grossRev = explicitGross > 0 ? explicitGross : (qty * unitPrice);
+      const discount = parseNumeric(row['Discount'] ?? row['Chiết khấu']);
+      const explicitNet = parseNumeric(row['Net_Revenue'] ?? row['Doanh thu sau giảm giá'] ?? row['Doanh thu thuần']);
+      const netRev = explicitNet > 0 ? explicitNet : (grossRev - discount);
+      const costAmount = parseNumeric(row['Cost_Amount'] ?? row['Giá vốn']);
+      const explicitProfit = parseNumeric(row['Gross_Profit'] ?? row['Lợi nhuận gộp']);
+      const grossProfit = explicitProfit !== 0 ? explicitProfit : (netRev - costAmount);
 
       return {
         Transaction_ID: String(row['Transaction_ID'] || row['Mã giao dịch'] || `TXN_${idx + 1}`),
@@ -279,9 +314,9 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
       Month: parseInt(row['Month'] || row['Tháng'] || 1, 10),
       Region_ID: String(row['Region_ID'] || row['Khu vực'] || 'REG_MB'),
       Sales_Rep_ID: String(row['Sales_Rep_ID'] || row['Nhân viên'] || 'REP_MB_01'),
-      Revenue_Target: parseFloat(row['Revenue_Target'] || row['Chỉ tiêu doanh thu'] || 0) || 0,
-      Profit_Target: parseFloat(row['Profit_Target'] || row['Chỉ tiêu lợi nhuận'] || 0) || 0,
-      Quantity_Target: parseFloat(row['Quantity_Target'] || row['Chỉ tiêu số lượng'] || 0) || 0,
+      Revenue_Target: parseNumeric(row['Revenue_Target'] ?? row['Chỉ tiêu doanh thu']),
+      Profit_Target: parseNumeric(row['Profit_Target'] ?? row['Chỉ tiêu lợi nhuận']),
+      Quantity_Target: parseNumeric(row['Quantity_Target'] ?? row['Chỉ tiêu số lượng']),
     }));
 
     // 3. Products Sheet
@@ -292,8 +327,8 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
       Product_Name: String(row['Product_Name'] || row['Tên sản phẩm'] || `Sản phẩm ${idx + 1}`),
       Category: String(row['Category'] || row['Nhóm sản phẩm'] || 'Xi măng bao'),
       Unit: String(row['Unit'] || row['Đơn vị tính'] || 'Tấn'),
-      Standard_Price: parseFloat(row['Standard_Price'] || row['Giá bán tham chiếu'] || 0) || 0,
-      Standard_Cost: parseFloat(row['Standard_Cost'] || row['Giá vốn tham chiếu'] || 0) || 0,
+      Standard_Price: parseNumeric(row['Standard_Price'] ?? row['Giá bán tham chiếu']),
+      Standard_Cost: parseNumeric(row['Standard_Cost'] ?? row['Giá vốn tham chiếu']),
       Status: (String(row['Status'] || row['Trạng thái'] || 'Active') as any),
     }));
 
