@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
@@ -9,10 +10,56 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const CONFIG_FILE = path.resolve(__dirname, 'sheet-config.json');
+
+interface StoredSheetConfig {
+  publishedUrl: string;
+  autoSyncInterval: number;
+  lastSync: string;
+}
+
+function getStoredSheetConfig(): StoredSheetConfig {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const raw = fs.readFileSync(CONFIG_FILE, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.warn('Could not read sheet-config.json:', e);
+  }
+  return { publishedUrl: '', autoSyncInterval: 0, lastSync: '' };
+}
+
+function saveStoredSheetConfig(cfg: Partial<StoredSheetConfig>): StoredSheetConfig {
+  try {
+    const current = getStoredSheetConfig();
+    const updated = { ...current, ...cfg };
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    return updated;
+  } catch (e) {
+    console.error('Could not save sheet-config.json:', e);
+    return getStoredSheetConfig();
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
+
+// Config endpoints for Google Sheets synchronization
+app.get('/api/sheets/config', (_req, res) => {
+  return res.json(getStoredSheetConfig());
+});
+
+app.post('/api/sheets/config', (req, res) => {
+  const { publishedUrl, autoSyncInterval } = req.body;
+  const updated = saveStoredSheetConfig({
+    ...(typeof publishedUrl === 'string' ? { publishedUrl: publishedUrl.trim() } : {}),
+    ...(typeof autoSyncInterval === 'number' ? { autoSyncInterval } : {}),
+  });
+  return res.json({ success: true, config: updated });
+});
 
 // Initialize Google GenAI client (server-side only)
 const apiKey = process.env.GEMINI_API_KEY;
@@ -139,12 +186,16 @@ function parseExcelDate(val: any): string {
 // Endpoint: Fetch and parse Google Sheets Published to the Web
 app.post('/api/sheets/fetch-published', async (req, res) => {
   try {
-    const { url } = req.body;
-    if (!url || typeof url !== 'string') {
+    const requestedUrl = req.body?.url;
+    const targetUrl = (requestedUrl && typeof requestedUrl === 'string' && requestedUrl.trim())
+      ? requestedUrl.trim()
+      : getStoredSheetConfig().publishedUrl;
+
+    if (!targetUrl) {
       return res.status(400).json({ error: 'Vui lòng cung cấp đường dẫn Google Sheets đã xuất bản lên web' });
     }
 
-    const { url: downloadUrl, isLikelyCsv } = normalizeGoogleSheetsUrl(url);
+    const { url: downloadUrl, isLikelyCsv } = normalizeGoogleSheetsUrl(targetUrl);
 
     const fetchResponse = await fetch(downloadUrl, {
       headers: {
@@ -316,6 +367,9 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
         parsedSettings = settingsMap;
       }
     }
+
+    // Persist verified Google Sheet URL for auto-sync on load
+    saveStoredSheetConfig({ publishedUrl: targetUrl, lastSync: new Date().toISOString() });
 
     return res.json({
       success: true,

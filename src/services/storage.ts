@@ -22,6 +22,25 @@ export function getPublishedSheetUrl(): string {
 
 export function savePublishedSheetUrl(url: string): void {
   localStorage.setItem(PUBLISHED_URL_KEY, url.trim());
+  // Also persist to server in background so other devices and page reloads get it
+  fetch('/api/sheets/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publishedUrl: url.trim() }),
+  }).catch(() => {});
+}
+
+export async function fetchServerSheetConfig(): Promise<{ publishedUrl?: string; autoSyncInterval?: number }> {
+  try {
+    const res = await fetch('/api/sheets/config');
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch server sheet config', e);
+  }
+  return {};
 }
 
 export function getAutoSyncInterval(): number {

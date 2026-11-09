@@ -4,6 +4,8 @@ import {
   loadDatabase,
   regenerateDemoData,
   getPublishedSheetUrl,
+  savePublishedSheetUrl,
+  fetchServerSheetConfig,
   getAutoSyncInterval,
   syncPublishedGoogleSheet,
 } from './services/storage';
@@ -18,6 +20,7 @@ import {
   computeSalesRepsLeaderboard,
   generateStatisticalInsights,
 } from './services/analytics';
+import { getStoredTheme, applyTheme, setStoredTheme, ThemeMode } from './services/theme';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { KpiGrid } from './components/KpiGrid';
@@ -55,9 +58,20 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 export default function App() {
+  const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme());
   const [db, setDb] = useState<DatabaseState>(() => loadDatabase());
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [customInsights, setCustomInsights] = useState<SalesInsightsData | null>(null);
+
+  // Sync theme changes to document DOM & localStorage
+  useEffect(() => {
+    applyTheme(theme);
+    setStoredTheme(theme);
+  }, [theme]);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   // Modals state
   const [selectedRepId, setSelectedRepId] = useState<string | null>(null);
@@ -70,33 +84,76 @@ export default function App() {
   const [hasPublishedUrl, setHasPublishedUrl] = useState(() => !!getPublishedSheetUrl());
   const [realtimeNotice, setRealtimeNotice] = useState<{ message: string; timestamp: string } | null>(null);
 
-  // Auto-sync effect: automatically fetch published Google Sheet on mount and on periodic intervals
+  // Auto-sync effect: immediately fetch published Google Sheet on mount and on periodic intervals
   useEffect(() => {
-    const pubUrl = getPublishedSheetUrl();
-    if (!pubUrl) return;
-
-    setHasPublishedUrl(true);
     let isCancelled = false;
 
-    const performSync = async () => {
+    const initAndSync = async () => {
+      // 1. Check local storage or query server config
+      let pubUrl = getPublishedSheetUrl();
+      if (!pubUrl) {
+        const serverCfg = await fetchServerSheetConfig();
+        if (serverCfg.publishedUrl) {
+          pubUrl = serverCfg.publishedUrl;
+          savePublishedSheetUrl(pubUrl);
+        }
+      }
+
+      if (!pubUrl) return;
+      if (isCancelled) return;
+
+      setHasPublishedUrl(true);
       setIsSyncing(true);
+
+      const timeStr = new Date().toLocaleTimeString('vi-VN');
+      setRealtimeNotice({
+        message: `Đang tự động nạp và cập nhật dữ liệu mới nhất từ Google Sheets...`,
+        timestamp: timeStr,
+      });
+
       const res = await syncPublishedGoogleSheet(pubUrl, db);
       if (!isCancelled) {
         setIsSyncing(false);
         if (res.success && res.newDb) {
           setDb(res.newDb);
+          setRealtimeNotice({
+            message: `Đã nạp và cập nhật dữ liệu mới nhất từ Google Sheets thành công (${res.rowCounts?.transactions || res.newDb.transactions.length} giao dịch)!`,
+            timestamp: new Date().toLocaleTimeString('vi-VN'),
+          });
+          setTimeout(() => {
+            if (!isCancelled) setRealtimeNotice(null);
+          }, 6000);
+        } else if (res.error) {
+          setRealtimeNotice({
+            message: `Lưu ý: Không thể tải từ Google Sheets (${res.error}). Đang hiển thị dữ liệu cục bộ.`,
+            timestamp: new Date().toLocaleTimeString('vi-VN'),
+          });
+          setTimeout(() => {
+            if (!isCancelled) setRealtimeNotice(null);
+          }, 8000);
         }
       }
     };
 
-    // Initial background sync
-    performSync();
+    // Trigger immediate sync on load
+    initAndSync();
 
     // Periodic auto-sync if configured
     const intervalSec = getAutoSyncInterval();
     if (intervalSec > 0) {
       const timer = setInterval(() => {
-        performSync();
+        const pubUrl = getPublishedSheetUrl();
+        if (pubUrl && !isCancelled) {
+          setIsSyncing(true);
+          syncPublishedGoogleSheet(pubUrl, db).then((res) => {
+            if (!isCancelled) {
+              setIsSyncing(false);
+              if (res.success && res.newDb) {
+                setDb(res.newDb);
+              }
+            }
+          });
+        }
       }, intervalSec * 1000);
       return () => {
         isCancelled = true;
@@ -240,6 +297,8 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* ROW 1: HEADER */}
       <Header
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         dashboardTitle={db.settings.Dashboard_Title}
         companyName={db.settings.Company_Name}
         lastUpdated={db.settings.Last_Data_Refresh}

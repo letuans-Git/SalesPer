@@ -9,9 +9,14 @@ import {
   Printer,
   Globe,
   RefreshCw,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { ThemeMode } from '../services/theme';
 
 interface HeaderProps {
+  theme: ThemeMode;
+  onToggleTheme: () => void;
   dashboardTitle?: string;
   companyName?: string;
   lastUpdated: string;
@@ -27,6 +32,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  theme,
+  onToggleTheme,
   dashboardTitle,
   companyName,
   lastUpdated,
@@ -169,6 +176,25 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Download className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="hidden sm:inline">Xuất Báo cáo</span>
+          </button>
+
+          {/* Theme Toggle Button: Trắng - Đen */}
+          <button
+            onClick={onToggleTheme}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm"
+            title={theme === 'light' ? 'Đang dùng nền Trắng · Nhấn để chuyển sang nền Đen' : 'Đang dùng nền Đen · Nhấn để chuyển sang nền Trắng'}
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="font-medium text-slate-200">Nền Đen</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-medium text-amber-200">Nền Trắng</span>
+              </>
+            )}
           </button>
 
           {/* Print View */}

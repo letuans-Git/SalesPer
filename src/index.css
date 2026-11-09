@@ -56,3 +56,135 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
 }
+
+/* LIGHT THEME (GIAO DIỆN TRẮNG) */
+html.theme-light {
+  color-scheme: light;
+}
+
+html.theme-light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.theme-light .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.theme-light .bg-slate-900\/90,
+html.theme-light .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-950\/40,
+html.theme-light .bg-slate-950\/50,
+html.theme-light .bg-slate-950\/60,
+html.theme-light .bg-slate-950\/70,
+html.theme-light .bg-slate-950\/80 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .border-slate-800,
+html.theme-light .border-slate-800\/80,
+html.theme-light .border-slate-800\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .border-slate-700,
+html.theme-light .border-slate-700\/60 {
+  border-color: #cbd5e1 !important;
+}
+
+html.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+html.theme-light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.theme-light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.theme-light .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.theme-light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-light .bg-slate-800,
+html.theme-light .bg-slate-800\/80,
+html.theme-light .bg-slate-800\/60 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .hover\:bg-slate-700:hover,
+html.theme-light .hover\:bg-slate-800:hover,
+html.theme-light .hover\:bg-slate-800\/60:hover {
+  background-color: #e2e8f0 !important;
+}
+
+html.theme-light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.theme-light input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.theme-light table thead tr {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+html.theme-light .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
+}
+
+html.theme-light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+}
+
+html.theme-light ::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.8);
+}
+
+html.theme-light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+html.theme-light text.recharts-text {
+  fill: #64748b !important;
+}
+
