@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx';
 import { DatabaseState, Settings } from '../types';
-import { generateFullDemoDatabase } from '../data/generator';
 
 const STORAGE_KEY = 'CHINFON_BI_DATABASE_STATE_V2';
 const GAS_URL_KEY = 'CHINFON_GAS_WEBAPP_URL';
@@ -98,7 +97,11 @@ export async function syncPublishedGoogleSheet(
         Dashboard_Title: parsedData.settings?.Dashboard_Title || currentDb.settings.Dashboard_Title,
         Company_Name: parsedData.settings?.Company_Name || currentDb.settings.Company_Name,
         Last_Data_Refresh: nowStr,
-        Demo_Data_Version: 'v2.4.0-LIVE (Google Sheets Web)',
+        Demo_Data_Version:
+          parsedData.settings?.Demo_Data_Version ||
+          parsedData.settings?.['demo_data_version'] ||
+          parsedData.settings?.['Demo_Data_Version'] ||
+          currentDb.settings.Demo_Data_Version,
       },
       dataLogs: [
         {
@@ -131,23 +134,45 @@ export async function syncPublishedGoogleSheet(
   }
 }
 
+export function createEmptyDatabase(): DatabaseState {
+  return {
+    transactions: [],
+    targets: [],
+    products: [],
+    salesReps: [],
+    regions: [],
+    channels: [],
+    settings: {
+      Company_Name: 'CHINFON CEMENT Corp.',
+      Dashboard_Title: 'SALES PERFORMANCE DASHBOARD – EXECUTIVE EDITION',
+      Currency: 'VND',
+      Current_Year: 2026,
+      Comparison_Year: 2025,
+      Start_Month: 1,
+      End_Month: 9,
+      Last_Data_Refresh: new Date().toISOString(),
+      Demo_Data_Version: '100% Google Sheets',
+      Data_Generation_Seed: 0,
+    },
+    dataLogs: [],
+  };
+}
+
 export function loadDatabase(): DatabaseState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.transactions && parsed.transactions.length > 500) {
+      if (parsed && Array.isArray(parsed.transactions) && parsed.transactions.length > 0) {
         return parsed;
       }
     }
   } catch (e) {
-    console.warn('Failed to parse cached database, generating fresh demo data:', e);
+    console.warn('Failed to parse cached database:', e);
   }
 
-  // Generate fresh seed database
-  const freshDb = generateFullDemoDatabase(20261105);
-  saveDatabase(freshDb);
-  return freshDb;
+  // Clean initial state until Google Sheets is synchronized
+  return createEmptyDatabase();
 }
 
 export function saveDatabase(db: DatabaseState): void {
@@ -158,10 +183,8 @@ export function saveDatabase(db: DatabaseState): void {
   }
 }
 
-export function regenerateDemoData(seed: number = Date.now()): DatabaseState {
-  const newDb = generateFullDemoDatabase(seed);
-  saveDatabase(newDb);
-  return newDb;
+export function regenerateDemoData(): DatabaseState {
+  return loadDatabase();
 }
 
 /**

@@ -389,6 +389,9 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
           if (/^(company_name|công ty|tên công ty|cong ty|company)$/i.test(cleanK)) {
             settingsMap['Company_Name'] = cleanV;
           }
+          if (/^(demo_data_version|demo_version|version|phiên bản|phien ban|phien_ban)$/i.test(cleanK)) {
+            settingsMap['Demo_Data_Version'] = cleanV;
+          }
         }
 
         // Support column-based format
@@ -397,6 +400,9 @@ app.post('/api/sheets/fetch-published', async (req, res) => {
 
         const cnCol = rowKeys.find(k => /^(company_name|công ty|company)$/i.test(k.trim()));
         if (cnCol && row[cnCol]) settingsMap['Company_Name'] = String(row[cnCol]).trim();
+
+        const verCol = rowKeys.find(k => /^(demo_data_version|demo_version|version|phiên bản|phien ban)$/i.test(k.trim()));
+        if (verCol && row[verCol]) settingsMap['Demo_Data_Version'] = String(row[verCol]).trim();
       });
       if (Object.keys(settingsMap).length > 0) {
         parsedSettings = settingsMap;

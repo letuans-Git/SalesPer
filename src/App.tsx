@@ -40,9 +40,8 @@ import { RepDetailModal } from './components/Modals/RepDetailModal';
 import { GasIntegrationModal } from './components/Modals/GasIntegrationModal';
 import { DataVerificationModal } from './components/Modals/DataVerificationModal';
 import { ExportModal } from './components/Modals/ExportModal';
-import { GenerateDataConfirmModal } from './components/Modals/GenerateDataConfirmModal';
 import { PublishedSheetModal } from './components/Modals/PublishedSheetModal';
-import { Zap, X as CloseIcon } from 'lucide-react';
+import { Zap, X as CloseIcon, Globe, Link2 } from 'lucide-react';
 import { realtimeSheetService } from './services/realtime';
 import { useLanguage } from './services/i18n';
 
@@ -79,7 +78,6 @@ export default function App() {
   const [isGasModalOpen, setIsGasModalOpen] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isPublishedModalOpen, setIsPublishedModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasPublishedUrl, setHasPublishedUrl] = useState(() => !!getPublishedSheetUrl());
@@ -100,7 +98,11 @@ export default function App() {
         }
       }
 
-      if (!pubUrl) return;
+      if (!pubUrl) {
+        // Automatically prompt to connect Google Sheets if not configured
+        setIsPublishedModalOpen(true);
+        return;
+      }
       if (isCancelled) return;
 
       setHasPublishedUrl(true);
@@ -322,12 +324,6 @@ export default function App() {
     setCustomInsights(null);
   }, []);
 
-  const handleRegenerateData = useCallback((seed: number) => {
-    const freshDb = regenerateDemoData(seed);
-    setDb(freshDb);
-    setCustomInsights(null);
-  }, []);
-
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
@@ -355,7 +351,6 @@ export default function App() {
           onOpenExportModal={() => setIsExportModalOpen(true)}
           onOpenGasModal={() => setIsGasModalOpen(true)}
           onOpenTestModal={() => setIsTestModalOpen(true)}
-          onOpenGenerateModal={() => setIsGenerateModalOpen(true)}
           onPrint={handlePrint}
         />
 
@@ -394,6 +389,36 @@ export default function App() {
 
       {/* MAIN EXECUTIVE DASHBOARD VIEWPORT */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* PROMINENT GOOGLE SHEETS CONNECTION PROMPT */}
+        {!hasPublishedUrl && (
+          <div className="bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border-2 border-blue-500/50 rounded-xl p-5 sm:p-6 shadow-xl animate-in fade-in duration-300">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-blue-400 font-bold text-base sm:text-lg">
+                  <Globe className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>
+                    {language === 'vi'
+                      ? 'KẾT NỐI FILE GOOGLE SHEETS – NẠP 100% DỮ LIỆU THỰC TẾ'
+                      : 'CONNECT GOOGLE SHEETS – 100% LIVE DATA'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                  {language === 'vi'
+                    ? 'Toàn bộ chỉ số, doanh thu, sản phẩm và giao dịch được trích xuất trực tiếp 100% từ file Google Sheets của bạn. Hệ thống cam kết không sử dụng dữ liệu tự phát.'
+                    : 'All metrics, revenue, products, and transactions are extracted directly from your Google Sheets file. No synthetic demo data is used.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPublishedModalOpen(true)}
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <Link2 className="w-4 h-4" />
+                <span>{language === 'vi' ? 'Nhập link Google Sheet ngay' : 'Connect Google Sheet Now'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ROW 3: 8 EXECUTIVE KPI CARDS */}
         <KpiGrid kpis={kpis} filters={filters} />
 
@@ -479,7 +504,9 @@ export default function App() {
             <span>·</span>
             <span>Sales Performance Dashboard – Executive Edition</span>
             <span>·</span>
-            <span className="font-mono text-amber-400/90 font-medium">{db.settings.Demo_Data_Version}</span>
+            <span className="font-mono text-amber-400/90 font-medium">
+              {db.settings?.Demo_Data_Version || ''}
+            </span>
           </div>
         </div>
       </footer>
@@ -511,13 +538,6 @@ export default function App() {
         filters={filters}
         kpis={kpis}
         onPrint={handlePrint}
-      />
-
-      <GenerateDataConfirmModal
-        isOpen={isGenerateModalOpen}
-        onClose={() => setIsGenerateModalOpen(false)}
-        onConfirm={handleRegenerateData}
-        currentSeed={db.settings.Data_Generation_Seed}
       />
 
       <PublishedSheetModal

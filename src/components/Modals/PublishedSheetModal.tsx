@@ -293,6 +293,11 @@ export const PublishedSheetModal: React.FC<Props> = ({
                           • Tiêu đề (SETTINGS): &quot;{result.newDb.settings.Dashboard_Title}&quot;
                         </div>
                       )}
+                      {result.newDb?.settings?.Demo_Data_Version && (
+                        <div className="col-span-2 sm:col-span-3 text-amber-300">
+                          • Phiên bản (SETTINGS [Demo_Data_Version]): &quot;{result.newDb.settings.Demo_Data_Version}&quot;
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

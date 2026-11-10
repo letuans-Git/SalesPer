@@ -30,8 +30,8 @@ export const translations = {
     // Header & Brand
     appTitle: 'SALES PERFORMANCE DASHBOARD – EXECUTIVE EDITION',
     defaultCompany: 'CHINFON CEMENT Corp.',
-    liveGoogleSheets: 'LIVE GOOGLE SHEETS',
-    demoData: 'DEMO DATA',
+    liveGoogleSheets: '100% DỮ LIỆU GOOGLE SHEETS',
+    demoData: 'CHƯA KẾT NỐI GOOGLE SHEET (BẤM ĐỂ NẠP)',
     lastUpdatedLabel: 'Cập nhật:',
 
     // Header Navigation
@@ -203,8 +203,8 @@ export const translations = {
     // Header & Brand
     appTitle: 'SALES PERFORMANCE DASHBOARD – EXECUTIVE EDITION',
     defaultCompany: 'CHINFON CEMENT Corp.',
-    liveGoogleSheets: 'LIVE GOOGLE SHEETS',
-    demoData: 'DEMO DATA',
+    liveGoogleSheets: '100% LIVE GOOGLE SHEETS',
+    demoData: 'GOOGLE SHEETS NOT CONNECTED (CLICK TO CONNECT)',
     lastUpdatedLabel: 'Updated:',
 
     // Header Navigation

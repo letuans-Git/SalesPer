@@ -6,6 +6,7 @@ import {
   Sun,
   Moon,
   Languages,
+  AlertCircle,
 } from 'lucide-react';
 import { ThemeMode } from '../services/theme';
 import { useLanguage } from '../services/i18n';
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   isPublishedConnected,
   isSyncing,
   onRefresh,
+  onOpenPublishedModal,
   onPrint,
 }) => {
   const { language, toggleLanguage, t } = useLanguage();
@@ -71,14 +73,23 @@ export const Header: React.FC<HeaderProps> = ({
                   {companyName || t('defaultCompany')}
                 </span>
                 {isPublishedConnected ? (
-                  <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={onOpenPublishedModal}
+                    className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shrink-0 hover:bg-emerald-500/30 transition-all cursor-pointer"
+                    title={language === 'vi' ? '100% Dữ liệu từ Google Sheets (Bấm để xem/đổi liên kết)' : '100% Live Google Sheets Data (Click to view/change link)'}
+                  >
                     <Globe className="w-3 h-3 text-emerald-400" />
-                    {t('liveGoogleSheets')}
-                  </span>
+                    <span>{t('liveGoogleSheets')}</span>
+                  </button>
                 ) : (
-                  <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                    {t('demoData')}
-                  </span>
+                  <button
+                    onClick={onOpenPublishedModal}
+                    className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer animate-pulse"
+                    title={language === 'vi' ? 'Chưa kết nối Google Sheet · Bấm để nhập link nạp dữ liệu' : 'Google Sheets not connected · Click to connect'}
+                  >
+                    <AlertCircle className="w-3 h-3 text-amber-400" />
+                    <span>{t('demoData')}</span>
+                  </button>
                 )}
               </div>
               <p className="text-[11px] sm:text-xs text-slate-400 font-medium tracking-wide truncate sm:whitespace-normal">
