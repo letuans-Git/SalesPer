@@ -251,10 +251,10 @@ export default function App() {
     return computeSalesRepsLeaderboard(db, filters, productCategoryMap);
   }, [db, filters, productCategoryMap]);
 
-  // Algorithmic statistical insights (or AI insights if generated)
+  // Algorithmic statistical insights (bilingual English / Vietnamese)
   const statisticalInsights = useMemo(() => {
-    return generateStatisticalInsights(kpis, regionPerf, categoryPerf, channelPerf, leaderboard);
-  }, [kpis, regionPerf, categoryPerf, channelPerf, leaderboard]);
+    return generateStatisticalInsights(kpis, regionPerf, categoryPerf, channelPerf, leaderboard, language);
+  }, [kpis, regionPerf, categoryPerf, channelPerf, leaderboard, language]);
 
   const activeInsights = customInsights || statisticalInsights;
 

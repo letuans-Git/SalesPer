@@ -383,36 +383,65 @@ export function computeSalesRepsLeaderboard(
   return items;
 }
 
+const REGION_NAME_EN: Record<string, string> = {
+  'Miền Bắc': 'Northern Region',
+  'Miền Trung': 'Central Region',
+  'Miền Nam': 'Southern Region',
+  'Tây Nguyên': 'Central Highlands',
+  'Đồng bằng sông Cửu Long': 'Mekong Delta',
+};
+
+const CATEGORY_NAME_EN: Record<string, string> = {
+  'Xi măng bao': 'Bagged Cement',
+  'Xi măng rời': 'Bulk Cement',
+  'Clinker': 'Clinker',
+  'Xi măng đặc biệt': 'Specialized Cement',
+  'Phụ gia xây dựng': 'Construction Additives',
+};
+
 export function generateStatisticalInsights(
   kpi: KPIResult,
   regions: RegionPerformance[],
   categories: CategoryPerformance[],
   channels: ChannelPerformance[],
-  leaderboard: SalesRepLeaderboardItem[]
+  leaderboard: SalesRepLeaderboardItem[],
+  lang: 'vi' | 'en' = 'vi'
 ): SalesInsightsData {
+  const isEn = lang === 'en';
   const positiveHighlights: string[] = [];
   const areasOfConcern: string[] = [];
   const recommendedActions: string[] = [];
 
+  const locRegion = (name: string) => (isEn ? REGION_NAME_EN[name] || name : name);
+  const locCategory = (cat: string) => (isEn ? CATEGORY_NAME_EN[cat] || cat : cat);
+
   // 1. Overall Revenue & Growth
   if (kpi.revenueGrowth > 0) {
     positiveHighlights.push(
-      `Doanh thu toàn công ty tăng trưởng +${kpi.revenueGrowth.toFixed(1)}% so với cùng kỳ năm ${2025}, đạt ${(kpi.netRevenue / 1e9).toFixed(1)} tỷ VNĐ.`
+      isEn
+        ? `Company-wide net revenue grew +${kpi.revenueGrowth.toFixed(1)}% YoY compared to 2025, reaching ${(kpi.netRevenue / 1e9).toFixed(1)}B VND.`
+        : `Doanh thu toàn công ty tăng trưởng +${kpi.revenueGrowth.toFixed(1)}% so với cùng kỳ năm 2025, đạt ${(kpi.netRevenue / 1e9).toFixed(1)} tỷ VNĐ.`
     );
   } else {
     areasOfConcern.push(
-      `Tốc độ tăng trưởng doanh thu suy giảm ${kpi.revenueGrowth.toFixed(1)}% so với cùng kỳ năm trước.`
+      isEn
+        ? `Revenue growth contracted by ${Math.abs(kpi.revenueGrowth).toFixed(1)}% compared to the prior year period.`
+        : `Tốc độ tăng trưởng doanh thu suy giảm ${Math.abs(kpi.revenueGrowth).toFixed(1)}% so với cùng kỳ năm trước.`
     );
   }
 
   // 2. Target Achievement
   if (kpi.achievementRate >= 100) {
     positiveHighlights.push(
-      `Tỷ lệ hoàn thành chỉ tiêu doanh thu đạt ${kpi.achievementRate.toFixed(1)}% (vượt kế hoạch ${(kpi.achievementRate - 100).toFixed(1)}%).`
+      isEn
+        ? `Revenue target achievement reached ${kpi.achievementRate.toFixed(1)}% (exceeding budget plan by ${(kpi.achievementRate - 100).toFixed(1)}%).`
+        : `Tỷ lệ hoàn thành chỉ tiêu doanh thu đạt ${kpi.achievementRate.toFixed(1)}% (vượt kế hoạch ${(kpi.achievementRate - 100).toFixed(1)}%).`
     );
   } else {
     areasOfConcern.push(
-      `Tiến độ hoàn thành chỉ tiêu đạt ${kpi.achievementRate.toFixed(1)}%, còn thiếu ${(100 - kpi.achievementRate).toFixed(1)}% so với kế hoạch ngân sách.`
+      isEn
+        ? `Revenue quota fulfillment stands at ${kpi.achievementRate.toFixed(1)}%, trailing the budget plan by ${(100 - kpi.achievementRate).toFixed(1)}%.`
+        : `Tiến độ hoàn thành chỉ tiêu đạt ${kpi.achievementRate.toFixed(1)}%, còn thiếu ${(100 - kpi.achievementRate).toFixed(1)}% so với kế hoạch ngân sách.`
     );
   }
 
@@ -420,16 +449,24 @@ export function generateStatisticalInsights(
   if (regions.length > 0) {
     const topRegion = regions[0];
     positiveHighlights.push(
-      `Khu vực ${topRegion.regionName} dẫn đầu toàn hệ thống với doanh thu ${(topRegion.revenue / 1e9).toFixed(1)} tỷ VNĐ (chiếm ${topRegion.share.toFixed(1)}% thị phần nội địa).`
+      isEn
+        ? `${locRegion(topRegion.regionName)} leads nationwide performance with ${(topRegion.revenue / 1e9).toFixed(1)}B VND in revenue (${topRegion.share.toFixed(1)}% domestic share).`
+        : `Khu vực ${topRegion.regionName} dẫn đầu toàn hệ thống với doanh thu ${(topRegion.revenue / 1e9).toFixed(1)} tỷ VNĐ (chiếm ${topRegion.share.toFixed(1)}% thị phần nội địa).`
     );
 
     const laggingRegions = regions.filter((r) => r.achievement < 95);
     if (laggingRegions.length > 0) {
+      const laggingNames = laggingRegions.map((r) => locRegion(r.regionName)).join(', ');
+      const laggingRates = laggingRegions.map((r) => r.achievement.toFixed(1) + '%').join(', ');
       areasOfConcern.push(
-        `Khu vực ${laggingRegions.map((r) => r.regionName).join(', ')} có tiến độ hoàn thành chỉ tiêu thấp (${laggingRegions.map((r) => r.achievement.toFixed(1) + '%').join(', ')}).`
+        isEn
+          ? `${laggingNames} recorded lower quota fulfillment (${laggingRates}).`
+          : `Khu vực ${laggingNames} có tiến độ hoàn thành chỉ tiêu thấp (${laggingRates}).`
       );
       recommendedActions.push(
-        `Giám đốc Khối cần rà soát lại chỉ tiêu quý và hỗ trợ nguồn hàng/chính sách giá thầu cho ${laggingRegions[0].regionName}.`
+        isEn
+          ? `Executive committee should review quarterly quotas and allocate commercial pricing/inventory support for ${locRegion(laggingRegions[0].regionName)}.`
+          : `Giám đốc Khối cần rà soát lại chỉ tiêu quý và hỗ trợ nguồn hàng/chính sách giá thầu cho ${laggingRegions[0].regionName}.`
       );
     }
   }
@@ -439,55 +476,73 @@ export function generateStatisticalInsights(
     const fastestGrowing = [...categories].sort((a, b) => b.growth - a.growth)[0];
     if (fastestGrowing && fastestGrowing.growth > 0) {
       positiveHighlights.push(
-        `Nhóm sản phẩm "${fastestGrowing.category}" bứt phá mạnh nhất với mức tăng trưởng +${fastestGrowing.growth.toFixed(1)}% YoY.`
+        isEn
+          ? `Product line "${locCategory(fastestGrowing.category)}" experienced strongest growth at +${fastestGrowing.growth.toFixed(1)}% YoY.`
+          : `Nhóm sản phẩm "${fastestGrowing.category}" bứt phá mạnh nhất với mức tăng trưởng +${fastestGrowing.growth.toFixed(1)}% YoY.`
       );
     }
 
     const highMargin = [...categories].sort((a, b) => b.margin - a.margin)[0];
     if (highMargin) {
       positiveHighlights.push(
-        `Dòng "${highMargin.category}" duy trì biên lợi nhuận cao nhất đạt ${highMargin.margin.toFixed(1)}%.`
+        isEn
+          ? `"${locCategory(highMargin.category)}" maintained the highest gross profit margin at ${highMargin.margin.toFixed(1)}%.`
+          : `Dòng "${highMargin.category}" duy trì biên lợi nhuận cao nhất đạt ${highMargin.margin.toFixed(1)}%.`
       );
     }
   }
 
   // 5. Channel Insights
-  const onlineChannel = channels.find((c) => c.channelId === 'CHN_ONLINE');
+  const onlineChannel = channels.find((c) => c.channelId === 'CHN_ONLINE' || c.channelId === 'CHN_ONL');
   if (onlineChannel && onlineChannel.growth > 15) {
     positiveHighlights.push(
-      `Kênh B2B Online mở rộng ấn tượng với mức tăng trưởng +${onlineChannel.growth.toFixed(1)}% so với cùng kỳ.`
+      isEn
+        ? `B2B Online distribution channel expanded impressively with +${onlineChannel.growth.toFixed(1)}% YoY growth.`
+        : `Kênh B2B Online mở rộng ấn tượng với mức tăng trưởng +${onlineChannel.growth.toFixed(1)}% so với cùng kỳ.`
     );
   }
 
   // 6. Sales Reps Evaluation
-  const starReps = leaderboard.filter((r) => r.statusBadge === 'Excellent');
-  const belowTargetReps = leaderboard.filter((r) => r.statusBadge === 'Below Target');
+  const starReps = leaderboard.filter((r) => r.achievement >= 110);
+  const belowTargetReps = leaderboard.filter((r) => r.achievement < 85);
 
   if (starReps.length > 0) {
     positiveHighlights.push(
-      `${starReps.length} nhân viên đạt mức xếp loại Xuất sắc (vượt >=120% chỉ tiêu), tiêu biểu: ${starReps.slice(0, 2).map((r) => r.salesRepName).join(', ')}.`
+      isEn
+        ? `${starReps.length} sales reps achieved Outstanding performance (>=110% quota), led by: ${starReps.slice(0, 2).map((r) => r.salesRepName).join(', ')}.`
+        : `${starReps.length} nhân viên đạt mức xếp loại Xuất sắc (vượt >=110% chỉ tiêu), tiêu biểu: ${starReps.slice(0, 2).map((r) => r.salesRepName).join(', ')}.`
     );
   }
 
   if (belowTargetReps.length > 0) {
     areasOfConcern.push(
-      `Có ${belowTargetReps.length} nhân sự chưa đạt ngưỡng an toàn (<80% chỉ tiêu): ${belowTargetReps.slice(0, 3).map((r) => r.salesRepName).join(', ')}.`
+      isEn
+        ? `${belowTargetReps.length} sales reps are currently below safe quota threshold (<85%): ${belowTargetReps.slice(0, 3).map((r) => r.salesRepName).join(', ')}.`
+        : `Có ${belowTargetReps.length} nhân sự chưa đạt ngưỡng an toàn (<85% chỉ tiêu): ${belowTargetReps.slice(0, 3).map((r) => r.salesRepName).join(', ')}.`
     );
     recommendedActions.push(
-      `Tổ chức đào tạo kỹ năng tư vấn giải pháp xi măng rời công trình và cơ chế chia sẻ tệp khách hàng cho nhóm nhân sự dưới chỉ tiêu.`
+      isEn
+        ? `Conduct technical solution training on commercial bulk cement and customer account sharing for under-quota personnel.`
+        : `Tổ chức đào tạo kỹ năng tư vấn giải pháp xi măng rời công trình và cơ chế chia sẻ tệp khách hàng cho nhóm nhân sự dưới chỉ tiêu.`
     );
   }
 
   // Strategic Action
   recommendedActions.push(
-    `Đẩy mạnh phân bổ dòng Xi măng Đặc chủng và Xi măng Jumbo cho các đại công trình ven biển và cao tốc để tối ưu biên lợi nhuận gộp.`
+    isEn
+      ? `Prioritize allocating Specialized and Jumbo Bulk Cement to coastal infrastructure and highway megaprojects to optimize gross margins.`
+      : `Đẩy mạnh phân bổ dòng Xi măng Đặc chủng và Xi măng Jumbo cho các đại công trình ven biển và cao tốc để tối ưu biên lợi nhuận gộp.`
   );
   recommendedActions.push(
-    `Thực hiện đối soát dòng tiền và công nợ đối với các đơn vị nhà thầu phân phối cấp 1 trước thềm cao điểm quý 4.`
+    isEn
+      ? `Execute structured cash-flow audits and credit receivables reconciliations with Tier-1 distributors ahead of the Q4 peak building season.`
+      : `Thực hiện đối soát dòng tiền và công nợ đối với các đơn vị nhà thầu phân phối cấp 1 trước thềm cao điểm quý 4.`
   );
 
   return {
-    executiveSummary: `Tổng quan kỳ báo cáo ghi nhận doanh thu thuần ${(kpi.netRevenue / 1e9).toFixed(2)} tỷ VNĐ, hoàn thành ${kpi.achievementRate.toFixed(1)}% chỉ tiêu với biên lợi nhuận gộp đạt ${kpi.grossMargin.toFixed(1)}%. Doanh nghiệp duy trì tốc độ mở rộng tốt tại các thị trường trọng điểm.`,
+    executiveSummary: isEn
+      ? `Reporting period overview records net revenue of ${(kpi.netRevenue / 1e9).toFixed(2)}B VND, achieving ${kpi.achievementRate.toFixed(1)}% of revenue quota with a gross margin of ${kpi.grossMargin.toFixed(1)}%. The enterprise maintains robust commercial expansion across strategic territories.`
+      : `Tổng quan kỳ báo cáo ghi nhận doanh thu thuần ${(kpi.netRevenue / 1e9).toFixed(2)} tỷ VNĐ, hoàn thành ${kpi.achievementRate.toFixed(1)}% chỉ tiêu với biên lợi nhuận gộp đạt ${kpi.grossMargin.toFixed(1)}%. Doanh nghiệp duy trì tốc độ mở rộng tốt tại các thị trường trọng điểm.`,
     positiveHighlights,
     areasOfConcern,
     recommendedActions,
