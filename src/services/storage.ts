@@ -17,7 +17,23 @@ export function saveGasWebAppUrl(url: string): void {
 }
 
 export function getPublishedSheetUrl(): string {
-  return localStorage.getItem(PUBLISHED_URL_KEY) || '';
+  if (typeof window !== 'undefined') {
+    // 1. Check URL query params for easy mobile sharing (?sheet=... or ?url=...)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlParam = params.get('sheet') || params.get('url') || params.get('sheetUrl');
+      if (urlParam && urlParam.trim()) {
+        const clean = decodeURIComponent(urlParam.trim());
+        localStorage.setItem(PUBLISHED_URL_KEY, clean);
+        return clean;
+      }
+    } catch {}
+
+    // 2. Check localStorage
+    const stored = localStorage.getItem(PUBLISHED_URL_KEY);
+    if (stored && stored.trim()) return stored.trim();
+  }
+  return '';
 }
 
 export function savePublishedSheetUrl(url: string): void {
@@ -73,12 +89,12 @@ export async function syncPublishedGoogleSheet(
   let successMessage = '';
   let serverFetchError = '';
 
-  // Step 1: Try server-side endpoint first (for full-stack dev/production servers)
+  // Step 1: Try server-side endpoint first via GET (zero preflight, optimal for mobile)
   try {
-    const res = await fetch('/api/sheets/fetch-published', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
+    const getEndpoint = `/api/sheets/fetch-published?url=${encodeURIComponent(url.trim())}`;
+    const res = await fetch(getEndpoint, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
     });
 
     const contentType = res.headers.get('content-type') || '';

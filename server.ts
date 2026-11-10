@@ -216,13 +216,13 @@ function parseNumeric(val: any): number {
   return isNaN(n) ? 0 : n;
 }
 
-// Endpoint: Fetch and parse Google Sheets Published to the Web
-app.post('/api/sheets/fetch-published', async (req, res) => {
+// Endpoint: Fetch and parse Google Sheets Published to the Web (Supports both GET and POST)
+app.all('/api/sheets/fetch-published', async (req, res) => {
   try {
-    const requestedUrl = req.body?.url;
-    const targetUrl = (requestedUrl && typeof requestedUrl === 'string' && requestedUrl.trim())
-      ? requestedUrl.trim()
-      : getStoredSheetConfig().publishedUrl;
+    const queryUrl = typeof req.query?.url === 'string' ? req.query.url.trim() : '';
+    const bodyUrl = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+    const requestedUrl = queryUrl || bodyUrl;
+    const targetUrl = requestedUrl || getStoredSheetConfig().publishedUrl;
 
     if (!targetUrl) {
       return res.status(400).json({ error: 'Vui lòng cung cấp đường dẫn Google Sheets đã xuất bản lên web' });

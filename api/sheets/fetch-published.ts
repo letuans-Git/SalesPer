@@ -90,12 +90,26 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const requestedUrl = req.body?.url || req.query?.url;
-    if (!requestedUrl || typeof requestedUrl !== 'string' || !requestedUrl.trim()) {
+    let requestedUrl = '';
+    if (req.query?.url && typeof req.query.url === 'string') {
+      requestedUrl = req.query.url.trim();
+    } else if (req.body) {
+      let b = req.body;
+      if (typeof b === 'string') {
+        try {
+          b = JSON.parse(b);
+        } catch {}
+      }
+      if (typeof b === 'object' && b?.url && typeof b.url === 'string') {
+        requestedUrl = b.url.trim();
+      }
+    }
+
+    if (!requestedUrl) {
       return res.status(400).json({ error: 'Vui lòng cung cấp đường dẫn Google Sheets đã xuất bản lên web' });
     }
 
-    const { url: downloadUrl } = normalizeGoogleSheetsUrl(requestedUrl.trim());
+    const { url: downloadUrl } = normalizeGoogleSheetsUrl(requestedUrl);
 
     const fetchResponse = await fetch(downloadUrl, {
       headers: {

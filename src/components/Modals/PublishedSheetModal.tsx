@@ -12,6 +12,8 @@ import {
   Send,
   HelpCircle,
   Radio,
+  Upload,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   getPublishedSheetUrl,
@@ -19,8 +21,11 @@ import {
   getAutoSyncInterval,
   saveAutoSyncInterval,
   getLastSyncTimestamp,
+  saveDatabase,
+  saveLastSyncTimestamp,
   syncPublishedGoogleSheet,
 } from '../../services/storage';
+import { parseSpreadsheetBuffer } from '../../services/clientSheetParser';
 import { fetchWebhookInfo, WebhookInfo } from '../../services/realtime';
 import { DatabaseState } from '../../types';
 
@@ -95,6 +100,74 @@ export const PublishedSheetModal: React.FC<Props> = ({
         success: false,
         error: res.error || 'Không thể đồng bộ',
       });
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsSyncing(true);
+    setResult(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const parseResult = parseSpreadsheetBuffer(buffer);
+      if (parseResult.success && parseResult.parsedData) {
+        const nowStr = new Date().toISOString();
+        const updatedDb: DatabaseState = {
+          transactions: parseResult.parsedData.transactions || db.transactions,
+          targets: parseResult.parsedData.targets || db.targets,
+          products: parseResult.parsedData.products || db.products,
+          salesReps: parseResult.parsedData.salesReps || db.salesReps,
+          regions: parseResult.parsedData.regions || db.regions,
+          channels: parseResult.parsedData.channels || db.channels,
+          settings: {
+            ...db.settings,
+            ...(parseResult.parsedData.settings || {}),
+            Last_Data_Refresh: nowStr,
+            Demo_Data_Version:
+              parseResult.parsedData.settings?.Demo_Data_Version ||
+              db.settings.Demo_Data_Version,
+          },
+          dataLogs: [
+            {
+              Log_ID: `LOG_${Date.now()}`,
+              Timestamp: nowStr,
+              Version: 'Direct File Upload',
+              RowCount: parseResult.parsedData.transactions ? parseResult.parsedData.transactions.length : db.transactions.length,
+              Status: 'Success',
+              Operator: 'Device File Picker',
+              ErrorMsg: `Đã nạp file "${file.name}" trực tiếp trên thiết bị`,
+            },
+            ...db.dataLogs.slice(0, 15),
+          ],
+        };
+
+        saveDatabase(updatedDb);
+        saveLastSyncTimestamp(nowStr);
+        onDatabaseUpdated(updatedDb);
+
+        setResult({
+          success: true,
+          message: `Nạp thành công ${parseResult.rowCounts.transactions} dòng giao dịch từ tệp "${file.name}"!`,
+          rowCounts: parseResult.rowCounts,
+          newDb: updatedDb,
+        });
+      } else {
+        setResult({
+          success: false,
+          error: parseResult.error || 'Không thể bóc tách dữ liệu từ tệp này.',
+        });
+      }
+    } catch (err: any) {
+      setResult({
+        success: false,
+        error: `Lỗi đọc tệp: ${err?.message || 'Không thể mở tệp'}`,
+      });
+    } finally {
+      setIsSyncing(false);
+      e.target.value = '';
     }
   };
 
@@ -250,16 +323,28 @@ export const PublishedSheetModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Sync Trigger Button */}
-              <div className="flex items-center gap-3 pt-1">
+              {/* Sync Trigger & File Upload Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
                   onClick={handleSyncNow}
                   disabled={isSyncing}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing ? 'Đang tải & đọc Google Sheets...' : 'Đồng bộ ngay bây giờ'}</span>
+                  <span>{isSyncing ? 'Đang tải & đọc Google Sheets...' : 'Đồng bộ từ Google Sheets'}</span>
                 </button>
+
+                {/* Direct Excel file upload option for mobile & desktop */}
+                <label className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium rounded border border-slate-700 transition-colors cursor-pointer shadow-sm">
+                  <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Hoặc nạp tệp Excel (.xlsx) từ máy</span>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               {/* Result Alert */}
@@ -304,15 +389,19 @@ export const PublishedSheetModal: React.FC<Props> = ({
               )}
 
               {/* Quick instructions */}
-              <div className="bg-slate-950/70 p-4 rounded-lg border border-slate-800 space-y-2">
+              <div className="bg-slate-950/70 p-4 rounded-lg border border-slate-800 space-y-2.5">
                 <div className="flex items-center gap-2 text-white font-semibold">
                   <HelpCircle className="w-4 h-4 text-amber-400" />
-                  <span>Cách xuất bản Google Sheets (30 giây):</span>
+                  <span>Cách lấy liên kết Google Sheets nhanh (Hỗ trợ 100% Mobile & PC):</span>
                 </div>
-                <p className="text-slate-300 text-[11px] leading-relaxed">
-                  Trong Google Sheets, chọn menu <b>Tệp (File)</b> $\rightarrow$ <b>Chia sẻ (Share)</b> $\rightarrow$ <b>Xuất bản lên web (Publish to web)</b>.
-                  Chọn <b>"Toàn bộ tài liệu"</b> định dạng <b>"Microsoft Excel (.xlsx)"</b> hoặc <b>"Trang web"</b> rồi bấm Xuất bản.
-                </p>
+                <div className="text-slate-300 text-[11px] leading-relaxed space-y-1.5">
+                  <p>
+                    <strong className="text-blue-300">Cách 1 (Nhanh nhất - khuyên dùng):</strong> Mở Google Sheets $\rightarrow$ Bấm nút <b>Chia sẻ (Share)</b> $\rightarrow$ Ở mục &ldquo;Quyền truy cập chung&rdquo;, chọn <b>&ldquo;Bất kỳ ai có đường liên kết đều có thể xem&rdquo;</b> (Anyone with the link can view) $\rightarrow$ Bấm <b>Sao chép đường liên kết</b> và dán vào đây. Ứng dụng tự động kết nối qua Google API mà không bị chặn CORS trên iOS/Android.
+                  </p>
+                  <p>
+                    <strong className="text-emerald-300">Cách 2 (Xuất bản Web):</strong> Menu <b>Tệp (File)</b> $\rightarrow$ <b>Chia sẻ</b> $\rightarrow$ <b>Xuất bản lên web (Publish to web)</b> $\rightarrow$ Chọn toàn bộ tài liệu định dạng <b>Excel (.xlsx)</b> hoặc <b>Trang web</b> rồi bấm Xuất bản.
+                  </p>
+                </div>
               </div>
             </>
           )}
