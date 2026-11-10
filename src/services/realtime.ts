@@ -97,10 +97,11 @@ export const realtimeSheetService = new RealtimeSheetService();
 export async function fetchWebhookInfo(): Promise<WebhookInfo | null> {
   try {
     const res = await fetch('/api/sheets/webhook-info');
-    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/json')) return null;
     return await res.json();
   } catch (err) {
-    console.error('Failed to fetch webhook info:', err);
+    console.warn('Failed to fetch webhook info:', err);
     return null;
   }
 }

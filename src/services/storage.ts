@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { DatabaseState, Settings } from '../types';
+import { fetchAndParseGoogleSheetsClientSide } from './clientSheetParser';
 
 const STORAGE_KEY = 'CHINFON_BI_DATABASE_STATE_V2';
 const GAS_URL_KEY = 'CHINFON_GAS_WEBAPP_URL';
@@ -32,7 +33,8 @@ export function savePublishedSheetUrl(url: string): void {
 export async function fetchServerSheetConfig(): Promise<{ publishedUrl?: string; autoSyncInterval?: number }> {
   try {
     const res = await fetch('/api/sheets/config');
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       return data;
     }
@@ -66,6 +68,12 @@ export async function syncPublishedGoogleSheet(
   url: string,
   currentDb: DatabaseState
 ): Promise<{ success: boolean; newDb?: DatabaseState; message?: string; error?: string; rowCounts?: any }> {
+  let parsedData: any = null;
+  let rowCounts: any = null;
+  let successMessage = '';
+  let serverFetchError = '';
+
+  // Step 1: Try server-side endpoint first (for full-stack dev/production servers)
   try {
     const res = await fetch('/api/sheets/fetch-published', {
       method: 'POST',
@@ -73,65 +81,93 @@ export async function syncPublishedGoogleSheet(
       body: JSON.stringify({ url }),
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      if (data && data.success && data.parsedData) {
+        parsedData = data.parsedData;
+        rowCounts = data.rowCounts;
+        successMessage = data.message || 'Đồng bộ từ máy chủ thành công';
+      } else if (data && data.error) {
+        serverFetchError = data.error;
+      }
+    } else {
+      serverFetchError = `Máy chủ phản hồi HTTP ${res.status}`;
+    }
+  } catch (err: any) {
+    serverFetchError = err?.message || 'Không thể kết nối máy chủ';
+  }
+
+  // Step 2: If server-side is unavailable (e.g. Vercel static deployment, GitHub Pages),
+  // automatically fall back to pure client-side direct Google Sheets parsing!
+  if (!parsedData) {
+    try {
+      const clientResult = await fetchAndParseGoogleSheetsClientSide(url);
+      if (clientResult.success && clientResult.parsedData) {
+        parsedData = clientResult.parsedData;
+        rowCounts = clientResult.rowCounts;
+        successMessage = `Đồng bộ thành công ${rowCounts.transactions.toLocaleString()} dòng giao dịch trực tiếp từ Google Sheets (Chế độ Client/Vercel)`;
+      } else {
+        return {
+          success: false,
+          error:
+            clientResult.error ||
+            serverFetchError ||
+            'Không thể tải dữ liệu từ liên kết Google Sheets. Vui lòng kiểm tra lại liên kết xuất bản web (Tệp > Chia sẻ > Xuất bản lên web).',
+        };
+      }
+    } catch (clientErr: any) {
       return {
         success: false,
-        error: data.error || 'Lỗi khi đồng bộ dữ liệu từ Google Sheets xuất bản',
+        error: `Lỗi đọc Google Sheets: ${clientErr?.message || 'Không thể tải file'}`,
       };
     }
-
-    const { parsedData, rowCounts } = data;
-    const nowStr = new Date().toISOString();
-
-    const updatedDb: DatabaseState = {
-      transactions: parsedData.transactions || currentDb.transactions,
-      targets: parsedData.targets || currentDb.targets,
-      products: parsedData.products || currentDb.products,
-      salesReps: parsedData.salesReps || currentDb.salesReps,
-      regions: parsedData.regions || currentDb.regions,
-      channels: parsedData.channels || currentDb.channels,
-      settings: {
-        ...currentDb.settings,
-        ...(parsedData.settings || {}),
-        Dashboard_Title: parsedData.settings?.Dashboard_Title || currentDb.settings.Dashboard_Title,
-        Company_Name: parsedData.settings?.Company_Name || currentDb.settings.Company_Name,
-        Last_Data_Refresh: nowStr,
-        Demo_Data_Version:
-          parsedData.settings?.Demo_Data_Version ||
-          parsedData.settings?.['demo_data_version'] ||
-          parsedData.settings?.['Demo_Data_Version'] ||
-          currentDb.settings.Demo_Data_Version,
-      },
-      dataLogs: [
-        {
-          Log_ID: `LOG_${Date.now()}`,
-          Timestamp: nowStr,
-          Version: 'Google Sheets Web Live',
-          RowCount: parsedData.transactions ? parsedData.transactions.length : currentDb.transactions.length,
-          Status: 'Success',
-          Operator: 'Auto-Sync / Google Sheets Published Web',
-          ErrorMsg: `Đồng bộ thành công từ ${url.slice(0, 45)}...`,
-        },
-        ...currentDb.dataLogs.slice(0, 15),
-      ],
-    };
-
-    saveDatabase(updatedDb);
-    saveLastSyncTimestamp(nowStr);
-
-    return {
-      success: true,
-      newDb: updatedDb,
-      message: data.message || 'Đồng bộ dữ liệu thành công',
-      rowCounts,
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: `Không thể kết nối máy chủ đồng bộ: ${err.message || 'Lỗi mạng'}`,
-    };
   }
+
+  const nowStr = new Date().toISOString();
+
+  const updatedDb: DatabaseState = {
+    transactions: parsedData.transactions || currentDb.transactions,
+    targets: parsedData.targets || currentDb.targets,
+    products: parsedData.products || currentDb.products,
+    salesReps: parsedData.salesReps || currentDb.salesReps,
+    regions: parsedData.regions || currentDb.regions,
+    channels: parsedData.channels || currentDb.channels,
+    settings: {
+      ...currentDb.settings,
+      ...(parsedData.settings || {}),
+      Dashboard_Title: parsedData.settings?.Dashboard_Title || currentDb.settings.Dashboard_Title,
+      Company_Name: parsedData.settings?.Company_Name || currentDb.settings.Company_Name,
+      Last_Data_Refresh: nowStr,
+      Demo_Data_Version:
+        parsedData.settings?.Demo_Data_Version ||
+        parsedData.settings?.['demo_data_version'] ||
+        parsedData.settings?.['Demo_Data_Version'] ||
+        currentDb.settings.Demo_Data_Version,
+    },
+    dataLogs: [
+      {
+        Log_ID: `LOG_${Date.now()}`,
+        Timestamp: nowStr,
+        Version: 'Google Sheets Live',
+        RowCount: parsedData.transactions ? parsedData.transactions.length : currentDb.transactions.length,
+        Status: 'Success',
+        Operator: 'Auto-Sync / Google Sheets',
+        ErrorMsg: `Đồng bộ thành công từ ${url.slice(0, 45)}...`,
+      },
+      ...currentDb.dataLogs.slice(0, 15),
+    ],
+  };
+
+  saveDatabase(updatedDb);
+  saveLastSyncTimestamp(nowStr);
+
+  return {
+    success: true,
+    newDb: updatedDb,
+    message: successMessage,
+    rowCounts,
+  };
 }
 
 export function createEmptyDatabase(): DatabaseState {
