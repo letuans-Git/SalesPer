@@ -44,6 +44,7 @@ import { PublishedSheetModal } from './components/Modals/PublishedSheetModal';
 import { Zap, X as CloseIcon, Globe, Link2 } from 'lucide-react';
 import { realtimeSheetService } from './services/realtime';
 import { useLanguage } from './services/i18n';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 const INITIAL_FILTERS: FilterState = {
   year: 2026,
@@ -553,6 +554,8 @@ export default function App() {
           setCustomInsights(null);
         }}
       />
+
+      <OfflineIndicator />
     </div>
   );
 }

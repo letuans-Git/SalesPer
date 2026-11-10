@@ -148,7 +148,10 @@ export const TransactionsTable: React.FC<Props> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
+      <div
+        className="overflow-x-auto -mx-3.5 sm:mx-0 px-3.5 sm:px-0 touch-pan-x"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <table className="w-full text-left text-xs border-collapse min-w-[850px]">
           <thead>
             <tr className="bg-slate-950/60 text-slate-400 border-b border-slate-800 font-semibold tracking-wider uppercase text-[11px]">

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { ThemeMode } from '../services/theme';
 import { useLanguage } from '../services/i18n';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -104,34 +105,40 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Zone 2: Navigation Links (always visible at top of page across all devices including mobile) */}
-        <nav className="flex items-center gap-2 sm:gap-3 lg:gap-5 xl:gap-6 text-[11px] sm:text-xs font-medium text-slate-300 w-full lg:w-auto order-3 lg:order-none overflow-x-auto scrollbar-none py-1 lg:py-0 border-t lg:border-t-0 border-slate-800/80 -mx-1 px-1 shrink-0">
-          <a href="#kpi-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+        {/* Zone 2: Navigation Links (always visible at top of page across all devices including mobile iOS & Android) */}
+        <nav
+          className="flex items-center gap-1.5 sm:gap-3 lg:gap-5 xl:gap-6 text-[11px] sm:text-xs font-medium text-slate-300 w-full lg:w-auto order-3 lg:order-none overflow-x-auto scrollbar-none py-1.5 lg:py-0 border-t lg:border-t-0 border-slate-800/80 -mx-1 px-1 shrink-0 touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <a href="#kpi-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navKpi')}
           </a>
-          <a href="#trend-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+          <a href="#trend-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navTrend')}
           </a>
-          <a href="#mix-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+          <a href="#mix-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navMix')}
           </a>
-          <a href="#reps-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+          <a href="#reps-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navReps')}
           </a>
-          <a href="#insights-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+          <a href="#insights-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navInsights')}
           </a>
-          <a href="#transactions-section" className="px-2 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 transition-colors whitespace-nowrap shrink-0">
+          <a href="#transactions-section" className="px-2.5 py-1 rounded hover:bg-slate-800/60 hover:text-blue-400 active:bg-slate-700 transition-colors whitespace-nowrap shrink-0">
             {t('navTransactions')}
           </a>
         </nav>
 
-        {/* Zone 3: Executive Actions */}
+        {/* Zone 3: Executive Actions (Touch-friendly on mobile, iOS & Android) */}
         <div className="flex items-center gap-1.5 sm:gap-2 max-w-full overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none shrink-0">
+          {/* PWA Mobile & Desktop Install Button */}
+          <PWAInstallButton />
+
           {/* Language Toggle: Tiếng Anh - Tiếng Việt */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded border border-blue-500/50 bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm"
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded border border-blue-500/50 bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 hover:text-white transition-all cursor-pointer shrink-0 shadow-sm active:scale-95"
             title={language === 'vi' ? 'Đang dùng Tiếng Việt · Nhấn để chuyển sang Tiếng Anh (English)' : 'Currently in English · Click to switch to Vietnamese (Tiếng Việt)'}
           >
             <Languages className="w-3.5 h-3.5 text-blue-400 shrink-0" />

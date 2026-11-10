@@ -46,6 +46,7 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 // Config endpoints for Google Sheets synchronization
 app.get('/api/sheets/config', (_req, res) => {
