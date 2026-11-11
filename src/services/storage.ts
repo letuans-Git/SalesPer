@@ -18,7 +18,7 @@ export function saveGasWebAppUrl(url: string): void {
 
 export function getPublishedSheetUrl(): string {
   if (typeof window !== 'undefined') {
-    // 1. Check URL query params for easy mobile sharing (?sheet=... or ?url=...)
+    // 1. Check URL query params for easy mobile sharing (?sheet=... or ?url=... or ?sheetUrl=...)
     try {
       const params = new URLSearchParams(window.location.search);
       const urlParam = params.get('sheet') || params.get('url') || params.get('sheetUrl');
@@ -29,30 +29,56 @@ export function getPublishedSheetUrl(): string {
       }
     } catch {}
 
-    // 2. Check localStorage
+    // 2. Check localStorage on this device
     const stored = localStorage.getItem(PUBLISHED_URL_KEY);
     if (stored && stored.trim()) return stored.trim();
+
+    // 3. Check Vite environment variable (bundled at build time)
+    try {
+      const envUrl = (import.meta as any).env?.VITE_GOOGLE_SHEETS_URL;
+      if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+        return envUrl.trim();
+      }
+    } catch {}
   }
   return '';
 }
 
 export function savePublishedSheetUrl(url: string): void {
-  localStorage.setItem(PUBLISHED_URL_KEY, url.trim());
+  const cleanUrl = url.trim();
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(PUBLISHED_URL_KEY, cleanUrl);
+  }
   // Also persist to server in background so other devices and page reloads get it
   fetch('/api/sheets/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ publishedUrl: url.trim() }),
+    body: JSON.stringify({ publishedUrl: cleanUrl }),
   }).catch(() => {});
 }
 
 export async function fetchServerSheetConfig(): Promise<{ publishedUrl?: string; autoSyncInterval?: number }> {
+  // 1. Check static /sheet-config.json (universal for Vercel, GitHub Pages, and dev servers)
   try {
-    const res = await fetch('/api/sheets/config');
+    const staticRes = await fetch('/sheet-config.json', { cache: 'no-cache' });
+    const staticType = staticRes.headers.get('content-type') || '';
+    if (staticRes.ok && (staticType.includes('application/json') || staticType.includes('text/plain'))) {
+      const data = await staticRes.json();
+      if (data && typeof data.publishedUrl === 'string' && data.publishedUrl.trim()) {
+        return data;
+      }
+    }
+  } catch {}
+
+  // 2. Check /api/sheets/config API endpoint (Express server or Vercel serverless function)
+  try {
+    const res = await fetch('/api/sheets/config', { cache: 'no-cache' });
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
-      return data;
+      if (data && typeof data.publishedUrl === 'string' && data.publishedUrl.trim()) {
+        return data;
+      }
     }
   } catch (e) {
     console.warn('Failed to fetch server sheet config', e);

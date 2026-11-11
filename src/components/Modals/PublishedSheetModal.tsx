@@ -14,6 +14,10 @@ import {
   Radio,
   Upload,
   FileSpreadsheet,
+  Share2,
+  Smartphone,
+  ClipboardPaste,
+  Trash2,
 } from 'lucide-react';
 import {
   getPublishedSheetUrl,
@@ -43,11 +47,12 @@ export const PublishedSheetModal: React.FC<Props> = ({
   onDatabaseUpdated,
 }) => {
   const [activeTab, setActiveTab] = useState<'publish' | 'webhook'>('publish');
-  const [url, setUrl] = useState(getPublishedSheetUrl());
+  const [url, setUrl] = useState(() => getPublishedSheetUrl());
   const [autoSync, setAutoSync] = useState(getAutoSyncInterval());
   const [isSyncing, setIsSyncing] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
@@ -61,6 +66,7 @@ export const PublishedSheetModal: React.FC<Props> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setUrl(getPublishedSheetUrl());
       fetchWebhookInfo().then((info) => {
         if (info) setWebhookInfo(info);
       });
@@ -69,11 +75,45 @@ export const PublishedSheetModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          setUrl(text.trim());
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Clipboard read error', e);
+    }
+  };
+
+  const handleCopyMobileShareLink = () => {
+    const targetUrl = url.trim() || getPublishedSheetUrl();
+    if (!targetUrl) {
+      setResult({
+        success: false,
+        error: 'Vui lòng dán liên kết Google Sheets trước khi sao chép link chia sẻ cho điện thoại.',
+      });
+      return;
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const mobileLink = `${origin}${path}?sheet=${encodeURIComponent(targetUrl)}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(mobileLink);
+      setCopiedShareLink(true);
+      setTimeout(() => setCopiedShareLink(false), 3000);
+    }
+  };
+
   const handleSyncNow = async () => {
     if (!url.trim()) {
       setResult({
         success: false,
-        error: 'Vui lòng nhập đường dẫn Google Sheets đã được xuất bản lên web',
+        error: 'Vui lòng dán liên kết Google Sheets (Ví dụ: https://docs.google.com/spreadsheets/d/.../edit?usp=sharing)',
       });
       return;
     }
@@ -276,21 +316,67 @@ export const PublishedSheetModal: React.FC<Props> = ({
             <>
               {/* URL Input Box */}
               <div className="space-y-2">
-                <label className="font-bold text-white text-xs block">
-                  Đường dẫn file Google Sheets đã xuất bản lên web:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-white text-xs block">
+                    Đường dẫn file Google Sheets:
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handlePasteFromClipboard}
+                      className="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 border border-slate-700 flex items-center gap-1 cursor-pointer"
+                      title="Dán nhanh liên kết từ bộ nhớ tạm"
+                    >
+                      <ClipboardPaste className="w-3 h-3" />
+                      <span>Dán link</span>
+                    </button>
+                    {url && (
+                      <button
+                        type="button"
+                        onClick={() => setUrl('')}
+                        className="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 border border-slate-700 flex items-center gap-1 cursor-pointer"
+                        title="Xóa đường dẫn"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Xóa</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Globe className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pubhtml hoặc /pub?output=xlsx"
+                    placeholder="Dán liên kết Google Sheets tại đây (Ví dụ: https://docs.google.com/spreadsheets/d/...)"
                     className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
                   />
                 </div>
                 <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Hỗ trợ tự động: Link Xuất bản lên web (<code className="text-blue-400">/pubhtml</code>, <code className="text-blue-400">/pub?output=xlsx</code>) hoặc Link Google Sheet chia sẻ thông thường (<code className="text-blue-400">/spreadsheets/d/ID/edit...</code>).
+                  Hỗ trợ tự động: Link chia sẻ Google Sheet thông thường (<code className="text-blue-400">/spreadsheets/d/ID/edit...</code>) hoặc Link Xuất bản Web (<code className="text-blue-400">/pubhtml</code>, <code className="text-blue-400">/pub?output=xlsx</code>).
+                </p>
+              </div>
+
+              {/* Dedicated Mobile Instant Pairing Card */}
+              <div className="bg-gradient-to-r from-blue-950/60 to-slate-950 p-3.5 rounded-lg border border-blue-800/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white font-semibold text-xs">
+                    <Smartphone className="w-4 h-4 text-emerald-400" />
+                    <span>Mở tự động trên iPhone / Android (Không cần nhập lại link):</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyMobileShareLink}
+                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    {copiedShareLink ? <Check className="w-3.5 h-3.5 text-white" /> : <Share2 className="w-3.5 h-3.5" />}
+                    <span>{copiedShareLink ? 'Đã sao chép link!' : 'Sao chép link cho Mobile'}</span>
+                  </button>
+                </div>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Gửi link này (qua Zalo, iMessage, Tin nhắn) và mở trên điện thoại iPhone / Android. Điện thoại sẽ tự động kết nối và ghi nhớ dữ liệu Google Sheets vĩnh viễn mà không bao giờ hỏi lại link.
                 </p>
               </div>
 

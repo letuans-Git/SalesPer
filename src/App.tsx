@@ -89,7 +89,7 @@ export default function App() {
     let isCancelled = false;
 
     const initAndSync = async () => {
-      // 1. Check local storage or query server config
+      // 1. Check URL query params, localStorage, env vars, or server/static config
       let pubUrl = getPublishedSheetUrl();
       if (!pubUrl) {
         const serverCfg = await fetchServerSheetConfig();
@@ -100,8 +100,8 @@ export default function App() {
       }
 
       if (!pubUrl) {
-        // Automatically prompt to connect Google Sheets if not configured
-        setIsPublishedModalOpen(true);
+        // Seamlessly keep banner ready without covering screen with a blocking popup on iPhone/Android
+        setHasPublishedUrl(false);
         return;
       }
       if (isCancelled) return;

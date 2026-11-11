@@ -11,6 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const CONFIG_FILE = path.resolve(__dirname, 'sheet-config.json');
+const PUBLIC_CONFIG_FILE = path.resolve(__dirname, 'public', 'sheet-config.json');
 
 interface StoredSheetConfig {
   publishedUrl: string;
@@ -19,22 +20,39 @@ interface StoredSheetConfig {
 }
 
 function getStoredSheetConfig(): StoredSheetConfig {
-  try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      const raw = fs.readFileSync(CONFIG_FILE, 'utf-8');
-      return JSON.parse(raw);
+  // Check files
+  for (const filePath of [CONFIG_FILE, PUBLIC_CONFIG_FILE]) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.publishedUrl === 'string' && parsed.publishedUrl.trim()) {
+          return {
+            publishedUrl: parsed.publishedUrl.trim(),
+            autoSyncInterval: parsed.autoSyncInterval || 0,
+            lastSync: parsed.lastSync || '',
+          };
+        }
+      }
+    } catch (e) {
+      console.warn(`Could not read ${filePath}:`, e);
     }
-  } catch (e) {
-    console.warn('Could not read sheet-config.json:', e);
   }
-  return { publishedUrl: '', autoSyncInterval: 0, lastSync: '' };
+
+  // Fallback to process.env if configured
+  const envUrl = process.env.VITE_GOOGLE_SHEETS_URL || process.env.GOOGLE_SHEETS_URL || '';
+  return { publishedUrl: envUrl.trim(), autoSyncInterval: 0, lastSync: '' };
 }
 
 function saveStoredSheetConfig(cfg: Partial<StoredSheetConfig>): StoredSheetConfig {
   try {
     const current = getStoredSheetConfig();
     const updated = { ...current, ...cfg };
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    const content = JSON.stringify(updated, null, 2);
+    fs.writeFileSync(CONFIG_FILE, content, 'utf-8');
+    try {
+      fs.writeFileSync(PUBLIC_CONFIG_FILE, content, 'utf-8');
+    } catch {}
     return updated;
   } catch (e) {
     console.error('Could not save sheet-config.json:', e);

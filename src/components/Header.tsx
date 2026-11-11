@@ -85,11 +85,11 @@ export const Header: React.FC<HeaderProps> = ({
                 ) : (
                   <button
                     onClick={onOpenPublishedModal}
-                    className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer animate-pulse"
-                    title={language === 'vi' ? 'Chưa kết nối Google Sheet · Bấm để nhập link nạp dữ liệu' : 'Google Sheets not connected · Click to connect'}
+                    className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    title={language === 'vi' ? 'Bấm để kết nối bảng tính Google Sheets nạp dữ liệu' : 'Click to connect Google Sheets file'}
                   >
-                    <AlertCircle className="w-3 h-3 text-amber-400" />
-                    <span>{t('demoData')}</span>
+                    <Globe className="w-3 h-3 text-blue-400" />
+                    <span>{language === 'vi' ? 'KẾT NỐI GOOGLE SHEETS' : 'CONNECT GOOGLE SHEETS'}</span>
                   </button>
                 )}
               </div>
