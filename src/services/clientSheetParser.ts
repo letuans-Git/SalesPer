@@ -563,13 +563,16 @@ export async function fetchAndParseGoogleSheetsClientSide(targetUrl: string): Pr
   ];
 
   if (info.publishId) {
+    candidateUrls.push(`https://docs.google.com/spreadsheets/d/e/${info.publishId}/pub?output=xlsx`);
     candidateUrls.push(`https://docs.google.com/spreadsheets/d/e/${info.publishId}/pub?output=csv`);
   }
   if (info.spreadsheetId) {
     candidateUrls.push(`https://docs.google.com/spreadsheets/d/${info.spreadsheetId}/gviz/tq?tqx=out:csv`);
   }
 
-  // Public CORS gateways as fallback
+  // Reliable Public CORS gateways as client-side fallback
+  candidateUrls.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(info.downloadUrl)}`);
+  candidateUrls.push(`https://corsproxy.io/?url=${encodeURIComponent(info.downloadUrl)}`);
   candidateUrls.push(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(info.downloadUrl)}`);
 
   let lastError = '';
